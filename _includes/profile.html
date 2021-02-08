@@ -1,0 +1,215 @@
+{% raw %}
+<div class="ui segment" id="profile" hidden="true">
+  <!-- header-->
+  <div style="display: flex; flex-flow: row">
+    <h2 class="ui header" style="flex: 1"><i class="folder open icon"></i>
+      <div class="content">Ваши расы (и игры)
+        <div class="sub header">Список всех ваших рас и игр в которые вы играете</div>
+      </div>
+    </h2>
+    <div class="ui buttons" style="flex-wrap: wrap">
+      <div class="or"></div>
+      <button class="ui button" v-bind:class="{ disabled: !isSessionValid() }" v-on:click="CreateNewRace">Create new one</button>
+    </div>
+  </div>
+  <!-- races list-->
+  <div class="ui inverted dimmer" id="races-dimmer">
+    <div class="ui text loader">Updating...</div>
+  </div>
+  <div class="ui styled fluid accordion" id="races">
+    <div v-for="r in races">
+      <div class="title"><i class="dropdown icon"></i>{{ r.name }}
+        <button class="ui basic icon compact right floated mini button" v-on:click="function(event) { event.stopPropagation(); ShowExistingRace({race: r.id, readonly: r.readonly })}" v-bind:value="r.id"><i class="icon" v-bind:class="{ edit: !r.readonly, expand: r.readonly }"></i>               {{ r.readonly ? "View" : "Edit" }}</button>
+      </div>
+      <div class="content" v-bind:race="r.id">
+        <p class="transition hidden">
+          <table class="ui unstackable table">
+            <thead>
+              <tr>
+                <th>Игра</th>
+                <!-- название игры-->
+                <th>Состояние</th>
+                <!-- состояние: 0: не начата, 1: и т.д.-->
+                <th>Текущий год</th>
+                <!-- текущий игровой год-->
+                <th></th>
+                <!-- без названия для кнопки Play/View, по кнопке View должна запускаться финальная статистика-->
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="g in r.games">
+                <td>{{ g.name }}</td>
+                <td>
+                  {{ g.state == 0 ? "Lobby" :
+                  g.state ==11 ? "Waiting for orders" :
+                  g.state ==21 ? "Waiting for turn" :
+                  g.state == 2 ? "Doing the turn" :
+                  g.state == 3 ? "Finished." :
+                  "Unknown" }}
+                </td>
+                <td>{{ g.year }}</td>
+                <td>
+                  <button class="mini ui right floated button" v-on:click="GameButtonPressed(g.id)" v-bind:value="g.id">
+                    {{ g.state == 0 ? "View" :
+                    g.state ==11 ? "Play" :
+                    g.state ==21 ? "Change orders" :
+                    g.state == 2 ? "Refresh info" :
+                    g.state == 3 ? "View game results" :
+                    "Send Error Report" }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </p>
+        <div class="fluid ui buttons">
+          <button class="ui button" v-on:click="JoinExistingGame(r.id)">Join EXISTING Game</button>
+          <div class="or"></div>
+          <button class="ui button" v-on:click="CreateNewGame(r.id)">Create NEW Game</button>
+        </div>
+        <p></p>
+      </div>
+    </div>
+  </div>
+  <div class="ui error message" v-bind:class="{ hidden: error == undefined }">
+    <div class="header"> </div>
+    <p>Error: {{ error }}</p>
+  </div>
+</div>
+<script>
+  // окно статистики и профиля игрока (домашнее окно)
+  $PROFILE = new Vue({ el: '#profile',
+    // струкрута даных приложения
+    data: {
+      loading: false,
+      races: [ ],
+      error: undefined
+    },
+    methods: {
+        // State methods
+        Enter: function() {
+          this.Update();
+        },
+        Leave: function() {},
+        
+        Lock: function(who) {
+          $(who || this.$el).dimmer('show');
+        },
+        Unlock: function(who) {
+          $(who || this.$el).dimmer('hide');
+        },
+  
+        // -----------------
+        Update: function() {
+          var data = this;
+          data.Lock();
+          data.error = undefined;
+  
+          GET("/api/races")
+            .then(json => {
+              console.log("ok:", json)
+              var races = json.reverse();
+              for (var i = 0; i < races.length; i++)
+                  races[i].games = [ ];
+  
+              data.races = races;
+              data.Unlock();
+              $("#races").accordion('refresh');
+            })
+            .catch(fail => {
+              data.error = "can't get races list";
+              data.Unlock();
+            });
+        },
+        UpdateRace: function(race) {
+          var data = this;
+          console.log("searching for ", race)
+          data.Lock();
+  
+          GET("/api/race/" + race + "/games")
+            .then(json => {
+              window.localStorage.race = $RACE = race;
+              var games = json.reverse();
+              for (var i = 0; i < data.races.length; i++) {
+                  if (data.races[i].id == race) {
+                    data.races[i].games = games;
+                    break;
+                  }
+              }
+              data.Unlock();
+            })
+            .catch( fail => {
+              alert("Can't get games list");
+              data.Unlock();
+            });
+        },
+        CreateNewRace: function(event) {
+          $RaceWizard.ShowModal();
+        },
+        ShowExistingRace: function(o) {
+          $RaceWizard.ShowModal(o);
+          return false;
+        },
+        PlayExistingGame: function(game) {
+          $GAME = window.localStorage.game = game;
+  
+          Switch($PLAYING);
+        },
+        GameButtonPressed: function(id) {
+          console.log("GameButtonPressed")
+          for (var r = 0; r < this.races.length; r++) {
+              for (var g = 0; g < this.races[r].games.length; g++) {
+                if (this.races[r].games[g].id == id) {
+                    var game = this.races[r].games[g];
+  
+                    // todo: переделать все эти стейты!
+                    game.state == 0 ? $GameDialog.ShowModal({game: id}) :
+                    game.state == 11? $PROFILE.PlayExistingGame(id) :
+                    game.state == 21? $PROFILE.PlayExistingGame(id) : // todo: alert("are you sure to change your orders?")
+                    game.state == 2 ? $PROFILE.PlayExistingGame(id) :
+                    game.state == 3 ? alert("todo: View game results") :
+                    alert("something wrong :(");
+                    break;
+                }
+              }
+          }
+        },
+        CreateNewGame: function(race) {
+          var data = this;
+          console.log("CreateNewGame: ", race)
+  
+          $GameDialog.ShowModal({
+              race: race,
+              ok: function(o) {
+                data.UpdateRace(o.race);
+              }
+          });
+        },
+        JoinExistingGame: function(race) {
+          var data = this;
+          console.log("JoinExistingGame: ", race)
+  
+          $JoinDialog.ShowModal({
+              race: race,
+              ok: function() {
+                data.UpdateRace(race);
+              }
+          });
+        },
+        ActivateRace: function(id) {
+          $("#races").accordion('open', id);
+        },
+        // хелперы
+        isSessionValid: function() {
+          return $SESSION != undefined;
+        }
+  
+    }
+  });
+  $("#races").accordion({
+    onOpening: function () {
+        // let's update race games table
+        $PROFILE.UpdateRace(this[0].attributes.race.value);
+    }
+  });
+</script>{% endraw %}

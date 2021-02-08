@@ -1,0 +1,918 @@
+{% raw %}
+<div class="small modal" id="ready-dialog" style="display: none;">
+  <div class="ui segment">
+    <div class="ui icon message"><i class="notched circle loading icon"></i>
+      <div class="content">
+        <div class="header">Пожалуйста, подождите</div>
+        <p></p>{{ state == 1 ? "Ждем других игроков..." :
+           state == 2 ? "Мы сейчас посчитаем весь мир..." :
+           state == 0 ? "Можете возвращаться в игру." : "" }}
+      </div>
+    </div>
+    <div class="ui buttons">
+      <button class="ui grey labeled icon button" v-on:click="doAction" v-bind:class="{ positive: state == 0, disabled: state == 2 || state == 1 }">
+        {{ state == 1 ? "Я передумал" :
+           state == 2 ? "...ждите..." :
+           state == 0 ? "готово!" : "" }}<i class="icon" v-bind:class="{ eraser: state == 1, coffee: state == 2, checkmark: state == 0 }"></i>
+      </button>
+    </div>
+    <div class="ui error message" v-bind:class="{ hidden: error == undefined }">
+      <div class="header"> </div>
+      <p>{{ error }}</p>
+    </div>
+  </div>
+</div>
+<!-- тут должно быть несколько вариантов:-->
+<!-- 1. если мир еще не начал просчитываться, то должна работать кнопка "отмена".-->
+<!-- 2. если мир уже начал просчитываться, то кнопка "отмена" должна стать неактивной-->
+<!-- 3. если мир уже посчитался, то надо закрыть диалог и все-все-все обновить-->
+<!--    через $PLAYING.Update();-->
+<!-- количество планетарных жителей изменяется сотнями-->
+<!-- единицы измерения времени - галактический год (это больше земного года - приблизительно 20 лет)-->
+<script>
+  $ReadyDialog = new Vue({ el: '#ready-dialog',
+    data: {
+      loading: false, // "in progress" dialog state
+      error: undefined, // error message
+  
+      state: 1 // 1 - можно отменить, 2 - уже нельзя, мир считается, 3 - готово
+    },
+    methods: {
+      Show: function(error) {
+        this.error = error;
+        this.state = 1;
+        $(this.$el)
+          .modal({
+            closable: false,
+            allowMultiple: true,
+          })
+          .modal('show');
+        
+        this.SendReady();
+      },
+      Close: function() {
+        $(this.$el)
+          .modal('hide');
+      },
+  
+      // скажем серверу, что мы готовы
+      SendReady() {
+        var data = this;
+        PUT(`/api/race/${$RACE}/game/${$GAME}/ready`, {
+          year: $PLAYING.year
+        }).then(json => {
+          console.log("JSON: ", json)
+          data.state = json;
+  
+          if (data.state != 0)
+            emit(data.check, 1000);
+        });
+      },
+      doAction() {
+  
+      },
+  
+      check() {
+        var data = this;
+        console.log("check!");
+        GET("/api/race/" + $RACE + "/game/" + $GAME + "/ready")
+          .then(json => {
+            data.state = json;
+            if (data.state == 0) { // ура! можно играть!
+              data.Close();
+              $PLAYING.Update();
+            }
+            else // еще нельзя играть, надо подождать
+              emit(data.check, 1000);
+          });
+      }
+    }
+  });
+  
+</script>
+<!-- ===========================================================================================-->
+<!-- главное игровое окно-->
+<div class="ui segment" id="playing" hidden="true">
+  <div class="ui grid">
+    <div class="row">
+      <div class="four wide column">
+        <!-- ----------------------------------------------------->
+        <!-- Кнопка "давайте жить дальше"-->
+        <div class="fluid mini ui left labeled button" v-on:click="doReady">
+          <div class="ui basic right pointing green label">{{ year }}&nbsp;г.год</div>
+          <div class="fluid mini ui button">Закрыть текущий г.год</div>
+        </div>
+        <!-- ---------------------------------------->
+        <!-- Описание планеты-->
+        <div class="ui card">
+          <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
+          <div class="content">
+            <div class="ui ribbon label">
+              <!--(v-bind:class='{ green: planet.owner == $RACE, red: (planet.owner != undefined) && (planet.owner != $RACE) }')-->
+              <div class="ui dropdown">
+                <input type="hidden" name="filters"/>
+                <div class="i world icon"></div><span class="text" id="planetname">loading...</span>
+                <div class="menu">
+                  <div class="ui icon search input">
+                    <input type="text" placeholder="Search a planet..."/>
+                  </div>
+                  <div class="scrolling menu">
+                    <div class="item" v-for="p in planets">{{ p.name }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ui right floated circular image" style="width:80px; height:80px">
+              <canvas id="surface" style="width:100%; height:100%"></canvas>
+              <div style="display:none"><img id="unknownp" src="img/unknownp.png"/></div>
+            </div>
+            <p></p>
+            <div class="ui mini statistics" id="population">
+              <div class="statistic">
+                <div class="value">{{ F( planet.population ) }}</div>
+                <div class="label">Население</div>
+              </div>
+            </div>
+            <div class="ui popup">
+              <div class="ui left aligned card">
+                <div class="content" style="zoom: 80%">
+                  <div class="header">Население планеты {{ planet.name }} составляет {{ F(population) }} колонистов</div>
+                  <div class="description">
+                    <p v-if="planet_value &gt; 0">Эта планета может прокормить не более {{ F(planet_population_max) }} колонистов.</p><span v-if="planet.owner">Население этой планеты вырастет на {{ F(planet_population_grow) }} к следующему г.году и будет составлять {{ F(population + planet_population_grow) }} колонистов.</span>
+                  </div>
+                </div>
+                <div class="content" style="zoom: 80%"><span class="text">Ценность планеты {{ planet.name }} для вашей расы составляет</span><span class="text" v-bind:class="{ red: planet_value &lt; 0, green: planet_value &gt; 0 }">&nbsp;{{ P(planet_value) }}</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="extra content">
+            <div class="center aligned author" style="zoom: 55%">
+              <!-- первая линейка статистики-->
+              <div class="ui centered grid">
+                <div class="row">
+                  <div class="ui tiny statistics">
+                    <!-- Ирониум-->
+                    <div class="blue statistic" id="ironium">
+                      <div class="value">{{ F( planet.ironium ) }}kT</div>
+                      <div class="label">Ironium</div>
+                    </div>
+                    <div class="ui popup" style="zoom: 180%">
+                      <div class="ui left aligned card">
+                        <div class="content">
+                          <div class="header">Ironium</div>
+                          <div class="description">
+                            <p>On Surface: {{ F( planet.ironium ) }}kT</p>
+                            <p>Mineral Concentration: ? (HW)</p>
+                            <p>Mining Rate: ?kT/yr</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Бораниум-->
+                    <div class="green statistic" id="boranium">
+                      <div class="value">{{ F( planet.boranium ) }}kT</div>
+                      <div class="label">Boranium</div>
+                    </div>
+                    <div class="ui popup" style="zoom: 180%">
+                      <div class="ui left aligned card">
+                        <div class="content">
+                          <div class="header">Boranium</div>
+                          <div class="description">
+                            <p>On Surface: {{ F( planet.boranium ) }}kT</p>
+                            <p>Mineral Concentration: ? (HW)</p>
+                            <p>Mining Rate: ?kT/yr</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Германиум-->
+                    <div class="yellow statistic" id="germanium">
+                      <div class="value">{{ F( planet.germanium ) }}kT</div>
+                      <div class="label">Germanium</div>
+                    </div>
+                    <div class="ui popup" style="zoom: 180%">
+                      <div class="ui left aligned card">
+                        <div class="content">
+                          <div class="header">Germanium</div>
+                          <div class="description">
+                            <p>On Surface: {{ F( planet.germanium ) }}kT</p>
+                            <p>Mineral Concentration: ? (HW)</p>
+                            <p>Mining Rate: ?kT/yr</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- вторая линейка статистики-->
+              <div class="ui centered grid">
+                <div class="row">
+                  <div class="ui tiny statistics">
+                    <!-- шахты-->
+                    <div class="statistic" id="mines">
+                      <div class="value">{{ F( planet.mines ) }} of {{ F( Math.floor(planet.population / 1000) ) }}</div>
+                      <div class="label">Mines</div>
+                    </div>
+                    <div class="ui popup" style="zoom: 180%">
+                      <div class="ui left aligned card">
+                        <div class="content">
+                          <div class="header">Mine Info</div>
+                          <div class="description">
+                            <p>You have {{ F( planet.mines ) }} Mines on {{ planet.name }}.</p>
+                            <p>You may build up to ? Mines; however, your colonists are currently capable of operating only ? of them.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- производство-->
+                    <div class="statistic" id="factories">
+                      <div class="value">{{ F( planet.factories ) }} of {{ F( Math.floor(planet.population / 1000) ) }}</div>
+                      <div class="label">Factories</div>
+                    </div>
+                    <div class="ui popup" style="zoom: 180%">
+                      <div class="ui left aligned card">
+                        <div class="content">
+                          <div class="header">Factory Info</div>
+                          <div class="description">
+                            <p>You have {{ F( planet.factories ) }} Factories on {{ planet.name }}.</p>
+                            <p>You may build up to ? Factories; however, your colonists are currently capable of operating only ? of them.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- заметка об устаревшей информации-->
+          <div class="ui bottom attached mini red button" v-if="planet.year &lt; year">Это устаревший отчет за {{ planet.year }} г.год</div>
+        </div>
+        <!-- ---------------------------------------->
+        <!-- Сканеры / защита / производство-->
+        <div class="ui card">
+          <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
+          <div class="content">
+            <div class="ui ribbon label">Сканеры / Защита / Производство</div>
+            <p></p>
+            <div class="ui grid">
+              <div class="centered row">
+                <div class="ui mini statistics">
+                  <div class="statistic" id="scanner">
+                    <div class="value">150 l.y.</div>
+                    <div class="label">Scoper 150</div>
+                  </div>
+                  <div class="statistic" id="defence">
+                    <div class="value">{{ planet.defence }} of {{ F( Math.floor(planet.defence / 1000) ) }}</div>
+                    <div class="label">
+                      {{ planet.defence_type == 1 ? "SDI" :
+                         planet.defence_type == 2 ? "Missile Battery" :
+                         planet.defence_type == 3 ? "Laser Battery" :
+                         planet.defence_type == 4 ? "Planetary Battery" :
+                         planet.defence_type == 5 ? "Neutron Battery" :
+                         "?" }}
+                    </div>
+                  </div>
+                  <div class="ui popup">
+                    <div class="ui left aligned card">
+                      <div class="content"><img class="right floated mini ui image" src="img/defence_types/sdi.gif"/>
+                        <div class="header">SDI</div>
+                        <div class="meta">Tech required:<span class="text green">&nbsp;0</span></div>
+                        <div class="description"><img class="ui small right floated image" src="img/defence_types/sdi_graph.gif"/><span class="text blue">Ironium</span><span style="float: right">5kT</span><br/><span class="text green">Boranium</span><span style="float: right">5kT</span><br/><span class="text yellow">Germanium</span><span style="float: right">5kT</span><br/><span class="text red">Resources</span><span style="float: right">15</span></div>
+                      </div>
+                      <div class="extra content">Planetary scanners and defences are not available to 'Alternate Reality' races.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ui grid">
+              <div class="centered row">
+                <div class="ui mini statistics" id="resources">
+                  <div class="red statistic">
+                    <div class="value">{{ F( planet.resources ) }} of {{ F( Math.floor(planet.population / 1000) ) }}</div>
+                    <div class="label">Resources per Year</div>
+                  </div>
+                </div>
+                <div class="ui popup">
+                  <div class="ui left aligned card">
+                    <div class="content">
+                      <div class="header">Resource info</div>
+                      <div class="description">
+                        <p>{{ planet.name }} generates ? resources each year. ? of these resources have been allocated to reach.</p>
+                        <p>That leaves ? resources for use by the planet.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ---------------------------------------->
+        <!-- Звездная база на орбите (если есть)-->
+        <div class="ui card">
+          <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
+          <div class="content">
+            <div class="ui ribbon label">Орбитальная группировка</div>
+            <div class="ui right floated image" style="width:80px; height:80px">
+              <image id="starbase" src="img/starbase.png" style="width:100%; height:100%"></image>
+            </div>
+            <p></p>
+            <div class="ui mini statistics">
+              <div class="statistic">
+                <div class="value">Unlimited</div>
+                <div class="label">Dock Capacity</div>
+              </div>
+            </div>
+            <button class="fluid mini ui button">Флот на орбите</button>
+          </div>
+          <div class="grid extra content">
+            <div class="center aligned author" style="zoom: 55%">
+              <!-- первая линейка статистики-->
+              <div class="ui centered grid">
+                <div class="row">
+                  <div class="ui tiny statistics">
+                    <div class="statistic">
+                      <div class="value">600dp</div>
+                      <div class="label">Armor</div>
+                    </div>
+                    <div class="statistic">
+                      <div class="value">800dp</div>
+                      <div class="label">Shields</div>
+                    </div>
+                    <div class="statistic">
+                      <div class="value">None</div>
+                      <div class="label">Damage</div>
+                    </div>
+                  </div>
+                </div>
+                <!-- вторая линейка статистики-->
+                <div class="row">
+                  <div class="ui tiny statistics">
+                    <div class="statistic">
+                      <div class="value">None</div>
+                      <div class="label">Mass Driver</div>
+                    </div>
+                    <div class="statistic">
+                      <div class="value">None</div>
+                      <div class="label">Destination</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- -------------------------------------------------------------------------->
+      <!-- игровое поле-->
+      <div class="twelve wide column">
+        <div class="ui raised segment" id="board">
+          <div class="ui dimmer" v-bind:class="{ active: updating.board }">
+            <div class="ui loader"></div>
+          </div>
+          <svg id="svg" width="100%" viewBox="0 0 400 400" onclick="svgClicked(evt)">
+            <rect width="100%" height="100%" fill="black"></rect>
+            <image xlink:href="img/space-background-image3.jpeg" x="0" y="0" height="100%" width="100%"></image>
+          </svg>
+        </div>
+        <!-- Сообщения-->
+        <div class="ui raised segment">
+          <div class="ui ribbon label">Year {{ year }} Message
+            <div class="detail">71 / 1255</div>
+          </div>
+          <!-- <div class="floating ui mini teal label">1255</div>-->
+          <div class="content">
+            <p></p>
+            <!-- <a class="ui grey circular label">71</a>-->
+            <div class="ui info message"><i class="close icon"></i>            Tip: You can hide unimportant messages by clicking the checkmark in
+                          the messages body. You can reshow these messages at any time by
+                          checking the checkbox under the messages block.
+            </div>
+            <div class="ui slider checkbox">
+              <input name="newsletter" type="checkbox"/>
+              <label>Show filtered messages</label>
+            </div>
+          </div>
+          <p></p>
+          <button class="ui right floated button"><i class="mail icon" onclick="javascript:rect.clear()"></i>         New Mail</button>
+          <button class="ui labeled icon button"><i class="left arrow icon"></i>         Prev</button>
+          <button class="ui right labeled icon button"><i class="right arrow icon"></i>         Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/generate-star-surface.js"></script>
+<script>
+  // окно статистики и профиля игрока (домашнее окно)
+  $PLAYING = new Vue({ el: '#playing',
+    // струкрута даных приложения
+    data: {
+        loading: false,
+        updating: {
+          board: false,
+          planet: 0,
+        },
+        error: undefined,
+  
+        race: { id: $RACE },
+        year: undefined,
+  
+        planets: [], // список всех планет
+        planets_focus: 0, // id планеты в фокусе
+        planet: {}, // объект planets[focus]
+  
+        ironium_conc: undefined,
+        boranium_conc: undefined,
+        germanium_conc: undefined,
+    },
+    computed: {
+      population: function() { return this.planet.population },
+      // максимальное количество колонистов, которое
+      // способна прокормить идеальная планета
+      race_population_max: function() {
+        if (!this.race.habitat) // раса еще не прогрузилась
+          return "?";
+  
+        var maxp = 1000000; // 1 миллиард, дефолтное значение
+        // количество зависит от prt расы
+        if (this.race.prt == 0) // Hyper-Expansion
+          maxp *= 0.5;
+        if (this.race.prt == 9) // Jack of All Trades
+          maxp *= 1.2;
+        // и от OBRM
+        if (this.race.lrts & 32)// Only Basic Remote Mining
+          maxp *= 1.1;
+        
+        return maxp;
+      },
+      planet_value: function() {
+        if (!this.race.habitat || !this.planet)
+          return "?";
+  
+        return HabValue(this.race, this.planet);
+      },
+      // максимальное количество колонистов, которое может прокормить
+      // даyная планета
+      planet_population_max: function() {
+        if (!this.race.habitat || !this.planet) // данные еще не прогрузились
+          return "?";
+  
+        var hv = HabValue(this.race, this.planet);
+        if (hv < 0.05)
+          return P100(this.race_population_max * 0.05);
+        else
+          return P100(this.race_population_max * hv);
+      },
+      planet_population_grow: function() {
+        if (this.race.habitat && this.planet) // если данные получены
+          return CalculateGrowth(this.race, this.planet);
+        return "?";
+      },
+    },
+    watch: {
+      planets_focus: function(focus, old) {
+        if (focus == old || focus == undefined)
+          return;
+  
+        $("#planetname").html(this.planets[focus].name);
+        drawSurface(this.planets[focus].surface);
+  
+        // move triangle
+        if (triangle != undefined)
+          triangle.remove();
+  
+        var x = this.planets[focus].x;
+        var y = this.planets[focus].y;
+        triangle = draw.polygon([
+            [0, 0],
+            [2, 5],
+            [0, 3],
+            [-2,5],
+            [0, 0]
+          ])
+          .move(x-2, y+3).fill('none')
+          .stroke({ color: 'yellow', width: 1 });
+  
+        this.planet = this.planets[focus];
+  
+        // update planet data (if not previously updated in this year)
+        if (this.planets[focus].timestamp != this.year) {
+          this.updating.planet++;
+          GET("/api/race/" + $RACE + "/game/" + $GAME + "/planet/" + focus)
+            .then(json => {
+              console.log(this);
+              console.log("json: ", json)
+  
+              // обновим поверхность планеты
+              this.planets[focus].surface = json.surface
+              if (this.planets_focus == focus)
+                drawSurface(this.planets[focus].surface);
+  
+              // и остальную информацию про планету
+              console.log("this.planets[focus]: ", this.planets[focus])
+              this.planets[focus] = {...this.planets[focus], ...json};
+              console.log("this.planets[focus]: ", this.planets[focus])
+  
+              this.planet = this.planets[focus];
+              this.planet.timestamp = this.year;
+              this.updating.planet--;
+  
+              //- HabValue(this.race, this.planet);
+              //- CalculateGrowth(this.race, this.planet);
+            })
+            .catch(fail => {
+              console.log("fail: ", fail)
+              this.updating.planet--;
+            });
+        }
+      }
+    },
+    methods: {
+        // State methods
+        Enter: function() {
+          this.Update();
+        },
+        Leave: function() { },
+        Lock: function(who) {
+          $(who || this.$el).dimmer('show');
+        },
+        Unlock: function(who) {
+          $(who || this.$el).dimmer('hide');
+        },
+  
+        PI: function(field) {
+          return F(this.planets[this.index] != undefined ? this.planets[this.index][field] : undefined);
+        },
+        P: function(field) {
+          if (isNaN(field))
+            return "?";
+          return Math.round(field * 100) + "%";
+        },
+        F: function(nStr) {
+          if (nStr === undefined || nStr === false || nStr === NaN)
+            return "?";
+          
+          nStr += '';
+          var x = nStr.split('.');
+          var x1 = x[0];
+          var x2 = x.length > 1 ? '.' + x[1] : '';
+          var rgx = /(\d+)(\d{3})/;
+          while (rgx.test(x1)) {
+                  x1 = x1.replace(rgx, "$1" + "'" + "$2");
+          }
+          return x1 + x2;
+        },
+  
+        // Form methods
+        // ----------------------------------------------
+        Update: function() {
+          var data = this;
+          data.Lock();
+          data.error = undefined;
+  
+          GET(`/api/game/${$GAME}/year`).then(year => this.year = year);
+          GET(`/api/race/${$RACE}`).then(race => this.race = race);
+  
+          //- GET("/api/game/" + $GAME + "/planets")
+  
+          data.Unlock();
+  
+          data.updating.board = true;
+          GET(`/api/race/${$RACE}/game/${$GAME}/planets`)
+            .then(json => {
+              data.planets = {};
+  
+              var radius = 1.0;
+              for (var i = 0; i < json.length; i++) {
+                // if normal view
+                draw.circle(2*radius).fill(
+                  json[i].owner != false ? 'lightgreen' : 'white'
+                ).move(json[i].x - radius, json[i].y - radius)
+  
+                // if 
+              }
+  
+              // обновим планетки
+              for (var i = 0; i < json.length; i++)
+                data.planets[json[i].id] = {...data.planets[json[i].id], ...json[i]};
+  
+              data.updating.board = false;
+  
+              // если никакая планета еще не выбрана (мы только что зашли),
+              // значит надо перейти на главную (дом)
+              if (data.planets_focus == 0)
+                GET("/api/race/" + $RACE + "/game/" + $GAME + "/homeworld")
+                  .then(json => {
+                    data.planets_focus = json;
+                  })
+                  .catch(fail => {
+                    data.error = "can't get races list";
+                  });
+            })
+            .catch(fail => {
+              data.error = "can't get races list";
+              data.updating.board = true;
+            });
+        },
+  
+        doReady() {
+          $ReadyDialog.Show();
+        },
+    }
+  });
+  
+</script>
+<script>
+  function drawSurface(surface) {
+    var c = document.getElementById('surface');
+    var w = 80;
+    var h = 80;
+    c.width = w;
+    c.height = h;
+  
+    var ctx = c.getContext('2d');
+    var imageData = ctx.getImageData(0,0,w,h);
+    var bufSize = w * h * 4;
+    var bufPtr = Module._malloc(bufSize);
+    var buf = new Uint8Array(Module.HEAPU8.buffer, bufPtr, bufSize);
+  
+    var wrappedPaint=Module.cwrap('paint','void',['number','number','number','number','number']);
+  
+    var seed = $GAME + surface;
+    var type = surface;
+    if (surface != undefined && surface != false) {
+      wrappedPaint(buf.byteOffset, w, h, seed, type);
+      imageData.data.set(buf);
+      ctx.putImageData(imageData,0,0);
+    }
+    else {
+      var image = document.getElementById('unknownp');
+      ctx.drawImage(image, 0, 0, w, h);
+    }
+  }
+  
+</script>
+<script>
+  $('.ui.dropdown')
+    .dropdown();
+  
+  $('#population').popup();
+  $("#ironium").popup();
+  $("#boranium").popup();
+  $("#germanium").popup();
+  $("#mines").popup();
+  $("#factories").popup();
+  
+  $('#scanner').popup();
+  $('#defence').popup({
+    position: "top right",
+  });
+  $("#resources").popup();
+  
+  $(document).ready(function(){
+    $("#planetname").on('DOMSubtreeModified',function(){
+      var name = $("#planetname").html();
+      for (var i in $PLAYING.planets) {
+        if ($PLAYING.planets[i].name == name) {
+          $PLAYING.planets_focus = i;
+          break;
+        }
+      }
+    });
+  });
+</script>
+<script>
+  var draw; // рисовалка
+  jQuery(document).ready(function () {
+    draw = SVG().addTo('#svg');
+  });
+  var triangle; // треугольничек, указывающий на планету
+  
+  function svgClicked()
+  {
+    var rect = svg.getBoundingClientRect()
+    var x = svg.viewBox.baseVal.width * ((arguments[0].clientX - rect.left) / rect.width);
+    var y = svg.viewBox.baseVal.height * ((arguments[0].clientY - rect.top) / rect.height);
+    console.log(x, " ", y)
+  
+    var dist = 999999;
+    var focus;
+    for (var i in $PLAYING.planets) {
+      var p = $PLAYING.planets[i];
+      var d = Math.abs(p.x - x) + Math.abs(p.y - y);
+      if (d < dist) {
+        dist = d;
+        focus = p;
+      }
+    }
+    $PLAYING.planets_focus = focus.id;
+  }
+  
+</script>
+<!-- http://www.starsfaq.com/advfaq/contents.htm-->
+<script>
+  var abs = Math.abs;
+  var min = Math.min;
+  var max = Math.max;
+  var sqrt = Math.sqrt;
+  
+  // https://wiki.starsautohost.org/wiki/Article_Library
+  // FAQ: https://wiki.starsautohost.org/wiki/Stars!_FAQ
+  var Global = {
+    GrowthFactorHyperExpansion: 2,
+    NominalMaximumPlanetaryPopulation: 1000000,
+  
+    PopulationFactorHyperExpansion: 0.5,
+    PopulationFactorJackOfAllTrades: 1.2,
+    PopulationFactorOnlyBasicRemoteMining: 1.1,
+  
+    BaseCrowdingFactor: 16.0 / 9.0, // Taken from the Stars technical faq.
+  };
+  var FGravity = [
+    // A.   x=1 to 26 (equivalent gravity range 0.12-0.50):
+    //      for each x, grav value= F(x), where
+    //      F(x)= 2^(-LOG[-0.24x + 8.24, 2]),
+    //      note that Log[a,b] means log of "a" at base "b"
+    //      inverse of F(x)= F(x)'= G(y), where y is the grav value input by a.
+    //      user, then
+    //      x= G(y)= (2^(-LOG[y,2]) - 8.24) / -0.24
+    //
+    // B.   x=27 to 51 (equivalent gravity range 0.50-1.00):
+    //      for each x, grav value= F(x), where
+    //      F(x)= 2^(-LOG[-0.04x + 3.04, 2]),
+    //      note that Log[a,b] means log of "a" at base "b"
+    //      inverse of F(x)= F(x)'= G(y), where y is the grav value input by a
+    //      user, then
+    //      x= G(y)= (2^(-LOG[y,2]) - 3.04) / -0.04
+    //.
+    // C.   x=52 to 76 (equivalent gravity range 1.00-2.00):
+    //      for each x, grav value= F(x), where
+    //      F(x)= 0.04x - 1.04,
+    //      inverse of F(x)= F(x)'= G(y), where y is the grav value input by a
+    //      user, then
+    //      x= G(y)= (y + 1.04) / 0.04
+    //
+    // D.   x=77 to 101 (equivalent gravity range 2.00-8.00):
+    //      for each x, grav value= F(x), where
+    //      F(x)= 0.24x - 16.24,
+    //      inverse of F(x)= F(x)'= G(y), where y is the grav value input by a
+    //      user, then
+    //      x= G(y)= (y + 16.24) / 0.24.
+  
+  //0      1      2      3      4      5      6      7      8      9
+    0.121, 0.125, 0.128, 0.133, 0.137, 0.142, 0.147, 0.152, 0.158, 0.164, //  0
+    0.171, 0.178, 0.186, 0.195, 0.204, 0.215, 0.227, 0.240, 0.255, 0.271, // 10
+    0.29,  0.31,  0.33,  0.36,  0.40,  0.44,  0.50,  0.51,  0.52,  0.53,  // 20
+    0.54,  0.55,  0.56,  0.58,  0.59,  0.60,  0.62,  0.64,  0.65,  0.67,  // 30
+    0.69,  0.71,  0.73,  0.75,  0.78,  0.80,  0.83,  0.86,  0.89,  0.92,  // 40
+    0.96,  1.00,  1.04,  1.08,  1.12,  1.16,  1.20,  1.24,  1.28,  1.32,  // 50
+    1.36,  1.40,  1.44,  1.48,  1.52,  1.56,  1.60,  1.64,  1.68,  1.72,  // 60
+    1.76,  1.80,  1.84,  1.88,  1.92,  1.96,  2.00,  2.24,  2.48,  2.72,  // 70
+    2.96,  3.20,  3.44,  3.68,  3.92,  4.16,  4.40,  4.64,  4.88,  5.12,  // 80
+    5.36,  5.60,  5.84,  6.08,  6.32,  6.56,  6.80,  7.04,  7.28,  7.52,  // 90
+    7.76,  8.00 // 100
+  ];
+  // prt:
+  var HE = 0;
+  
+  // 
+  function NormalizeHabitalityDistance(envt, starValue)
+  {
+    var minv = envt[0];
+    var maxv = envt[1];
+    var span = maxv - minv;
+  
+    var totalClicksFromCenterToEdge = span / 2;
+    var centre = minv + totalClicksFromCenterToEdge;
+    var clicksFromCenter = abs(centre - starValue);
+    //- console.log("nhd:", clicksFromCenter / totalClicksFromCenterToEdge)
+    return clicksFromCenter / totalClicksFromCenterToEdge;
+  }
+  
+  function GetMalusForEnvironment(envt, starValue, maxMalus)
+  {
+    if (starValue > envt[1])
+      return min(maxMalus, starValue - envt[1]);
+    
+    if (starValue < envt[0])
+      return min(maxMalus, envt[0] - starValue);
+  
+    return 0;
+  }
+  
+  function P100(v)
+  {
+    return Math.floor(v / 100) * 100;
+  }
+  
+  // эта функция возвращает "ценность" планеты для населения расы в процентах.
+  // https://www.elite-games.ru/stars/doc/race/hab.shtml
+  function HabValue(race, planet)
+  {
+    var g = (race.habitat.immunity & 1) ? 0 : NormalizeHabitalityDistance(race.habitat.gravity, planet.gravity);
+    var t = (race.habitat.immunity & 2) ? 0 : NormalizeHabitalityDistance(race.habitat.temperature, planet.temperature);
+    var r = (race.habitat.immunity & 4) ? 0 : NormalizeHabitalityDistance(race.habitat.radiation, planet.radiation);
+  
+    //- console.log("gtr:", g, t, r);
+  
+    if (r > 1 || g > 1 || t > 1) {
+      // currently not habitable
+      var result = 0;
+      var maxMalus = (race.lrts & 4) ? 30 : 15; // 30 for TT (Total Terraforming)
+      if (g > 1)
+          result -= GetMalusForEnvironment(race.habitat.gravity, planet.gravity, maxMalus);
+      if (t > 1)
+          result -= GetMalusForEnvironment(race.habitat.temperature, planet.temperature, maxMalus);
+      if (r > 1)
+          result -= GetMalusForEnvironment(race.habitat.radiation, planet.radiation, maxMalus);
+      console.log("hab value:", result / 100.0);
+      return result / 100.0;
+    }
+  
+    var x = max(0, g - 0.5);
+    var y = max(0, t - 0.5);
+    var z = max(0, r - 0.5);
+  
+    var h = sqrt(((1 - g) * (1 - g)) + ((1 - t) * (1 - t)) + ((1 - r) * (1 - r))) * (1 - x) * (1 - y) * (1 - z) / sqrt(3.0);
+    console.log("hab value:", h);
+    return h;
+  }
+  
+  // максимальное количество населения на идеальной планете
+  function MaxPopulation(race)
+  {
+    var maxPop = Global.NominalMaximumPlanetaryPopulation;
+    if (race.prt == 0) // HE
+      maxPop = Math.floor(maxPop * Global.PopulationFactorHyperExpansion);
+    if (race.prt == 9) // JOAT
+      maxPop = Math.floor(maxPop * Global.PopulationFactorJackOfAllTrades);
+    if (race.lrts & 32) // OBRM
+      maxPop = Math.floor(maxPop * Global.PopulationFactorOnlyBasicRemoteMining);
+  
+    console.log("maxPop:", maxPop)
+    return maxPop;
+  }
+  
+  // количество колонистов от максимального (в процентах)
+  function Capacity(race, planet)
+  {
+    var maxPopulation = MaxPopulation(race);
+  
+    //- if (race.prt == 0) // "HyperExpansion"
+    //-   maxPopulation *= Global.PopulationFactorHyperExpansion; // ???, we already used this at MaxPopulation.
+  
+    console.log("HabValue:", HabValue(race, planet))
+    if (HabValue(race, planet) < 0.0)
+      maxPopulation = 25000.0;
+  
+    var capacity = (planet.population / maxPopulation) * 100;
+    console.log("capacity: ", capacity);
+    return Math.ceil(capacity);
+  }
+  
+  function CalculateGrowth(race, planet)
+  {
+    console.log("planet", planet)
+    var habitalValue = HabValue(race, planet);
+    var growthRate = race.habitat.growth_rate;
+  
+    if (race.prt == 0)
+      growthRate *= Global.GrowthFactorHyperExpansion;
+  
+    var populationGrowth = 0;
+    var capacity = Capacity(race, planet) / 100.0;
+  
+    if (habitalValue < 0.0) // negative hab planet
+      populationGrowth = 0.1 * planet.population * habitalValue;
+    else if (capacity < 0.25) // low pop planet
+      populationGrowth = planet.population * growthRate / 100.0 * habitalValue;
+    else if (capacity > 0.25 && capacity < 1.0) // // early crowding
+    {
+      populationGrowth = planet.population * growthRate / 100.0 * habitalValue;
+      var crowdingFactor = Global.BaseCrowdingFactor * (1.0 - capacity) * (1.0 - capacity);
+      populationGrowth *= crowdingFactor;
+    }
+    else if (capacity == 1.0) // full planet
+      populationGrowth = 0;
+    else if (capacity > 1.0 && capacity < 4.0) // over full planet
+      populationGrowth = Colonists * (capacity - 1) * -4.0 / 100.0; // .04% per 1% over capacity
+    else if (capacity >= 4.0) // very over full planet: crowding deaths cap at 12%
+      populationGrowth = Colonists * -0.12;
+            
+    // As per vanilla Stars! the minimal colonist growth unit
+    // is set as 100 colonists. A planet does not track colonists
+    // by the tens. While visually this does not matter much,
+    // the compounding effect of growth can make those extra tens of
+    // colonists matter in the long run and mismatch the behaviour
+    // of Stars! and Nova.
+    var finalGrowth = Math.floor(populationGrowth / 100) * 100;
+  
+    console.log("finalGrowth:", finalGrowth);
+    return finalGrowth;
+  }
+  
+</script>{% endraw %}

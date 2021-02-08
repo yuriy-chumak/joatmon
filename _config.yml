@@ -1,0 +1,13 @@
+# Site settings
+title: Joatmon
+email: yuriy.chumak@mail.com
+description: Joatmon
+baseurl: "/joatmon"
+url: "http://yuriy-chumak.github.io/joatmon"
+
+plugins:
+exclude:
+  - "*.jade"
+
+# Build settings
+markdown: kramdown

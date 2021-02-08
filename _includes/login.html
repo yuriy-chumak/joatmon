@@ -1,0 +1,105 @@
+{% raw %}
+<div class="small modal" id="login-dialog" style="display: none;">
+  <div class="ui segment">
+    <div class="ui stacked segment">
+      <div class="field">
+        <div class="ui left icon input" v-bind:class="{ disabled: loading }"><i class="user icon"></i>
+          <input type="text" name="email" placeholder="E-mail address" v-model="email"/>
+        </div>
+      </div>
+      <div class="field">
+        <div class="ui left icon input" v-bind:class="{ disabled: loading }"><i class="lock icon"></i>
+          <input type="password" name="password" placeholder="Password" v-model="password"/>
+        </div>
+      </div>
+    </div>
+    <div class="ui buttons">
+      <button class="ui disabled button">Sign up</button>
+      <div class="or"></div>
+      <button class="ui positive right labeled icon button" v-on:click="doLogin" v-bind:class="{ loading: loading }">Yep, that's me<i class="checkmark icon"></i></button>
+    </div>
+    <div class="ui error message" v-bind:class="{ hidden: error == undefined }">
+      <div class="header"> </div>
+      <p>{{ error }}</p>
+    </div>
+  </div>
+</div>
+<script>
+  // всплывающее модальное окошко регистрации
+  $LoginDialog = new Vue({ el: '#login-dialog',
+    data: {
+      loading: false, // "in progress" dialog state
+      error: undefined, // error message
+  
+      email: window.location.hostname == "127.0.0.1" ? "user@1" : "user@2",   // temp
+      password: window.location.hostname == "127.0.0.1" ? "123456" : "223456",// temp
+    },
+    methods: {
+      Show: function(error) {
+        this.error = error;
+        $(this.$el)
+          .modal({
+            closable: false,
+            allowMultiple: true,
+          })
+          .modal('show');
+      },
+      Close: function() {
+        $(this.$el)
+          .modal('hide');//.modal('hide dimmer')
+      },
+  
+  
+      doLogin: function() {
+        var self = this;
+        self.loading = true;
+  
+        fetch(API.host + "/api/login", {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            login: self.email,
+            password: self.password
+          })
+        })
+        .then(response => response.status === 200 ? response.json() : Throw(response.status))
+        .then(json => {
+          self.error = undefined;
+          self.loading = false;
+          console.info("Logged as", json);
+  
+          $SESSION = window.localStorage.session = json.session; // обновим сессию
+          self.Close();
+  
+          // if no active window:
+          if ($STATE == $NONE)
+            Switch($PROFILE);
+        })
+        .catch((error) => {
+          self.loading = false;
+          if (status == 0) { // no connection?
+              self.error = "No connection?";
+          }
+          else
+          switch (status) {
+            case 401:
+                self.error = "Invalid login and/or password.";
+                break;
+            case 503:
+                self.error = "Internal server error.";
+                break;
+            default:
+                self.error = "Error " + status + ".";
+                break;
+          }
+          self.error += " Please, try again."
+        });
+  
+        return false;
+      }
+    },
+  })
+</script>{% endraw %}

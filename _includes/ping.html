@@ -1,0 +1,59 @@
+{% raw %}
+<div class="small modal" id="ping" style="display: none;">
+  <div class="ui floating message">
+    <div class="ui icon message">
+      <div class="i notched circle loading icon"></div>
+      <div class="content">
+        <div class="header">No game server connection.</div>
+        <p>Please, wait...</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  $PingDialog = new Vue({ el: '#ping',
+    // струкрута даных приложения
+    methods: {
+      Show: function() {
+        $(this.$el)
+          .modal({
+            closable: false,
+            allowMultiple: true,
+          })
+          .modal('show');
+  
+        var data = this;
+        // let's ping until server up
+        var ping = () => {
+          fetch(API.host + "/api/ping", {
+            method: 'GET',
+            headers: {
+              'x-joatmon-sid': $SESSION
+            }
+          })
+          .then(response => response.status === 200 ? response : Throw(response.status))
+          .then(response => {
+            if ($STATE == $NONE)
+              Switch($PROFILE);
+            $PingDialog.Close();
+          })
+          .catch(error => {
+            if (error == 401) { // login failed
+              actions = []; // clear all queued actions
+              $PingDialog.Close();
+              $LoginDialog.Show();
+            }
+            else
+              emit(ping, 1000);
+            })
+          };
+          emit(ping, 1000);
+      },
+  
+      Close: function() {
+        $(this.$el)
+          .modal('hide');
+      }
+    }
+  })
+</script>{% endraw %}
