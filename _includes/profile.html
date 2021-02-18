@@ -14,7 +14,7 @@
   </div>
   <!-- races list-->
   <div class="ui inverted dimmer" id="races-dimmer">
-    <div class="ui text loader">Updating...</div>
+    <div class="ui text loader">{{ loader_message }}</div>
   </div>
   <div class="ui styled fluid accordion" id="races">
     <div v-for="r in races">
@@ -74,7 +74,8 @@
   <div class="ui error message" v-bind:class="{ hidden: error == undefined }">
     <div class="header"> </div>
     <p>Error: {{ error }}</p>
-  </div>
+  </div><br/>
+  <div class="fluid ui button" v-on:click="Logout()">Logout</div>
 </div>
 <script>
   // окно статистики и профиля игрока (домашнее окно)
@@ -83,7 +84,8 @@
     data: {
       loading: false,
       races: [ ],
-      error: undefined
+      error: undefined,
+      loader_message: "Updating..."
     },
     methods: {
         // State methods
@@ -92,8 +94,9 @@
         },
         Leave: function() {},
         
-        Lock: function(who) {
-          $(who || this.$el).dimmer('show');
+        Lock: function(message) {
+          this.loader_message = message;
+          $(this.$el).dimmer('show');
         },
         Unlock: function(who) {
           $(who || this.$el).dimmer('hide');
@@ -102,7 +105,7 @@
         // -----------------
         Update: function() {
           var data = this;
-          data.Lock();
+          data.Lock("Обновляю...");
           data.error = undefined;
   
           GET("/api/races")
@@ -121,10 +124,23 @@
               data.Unlock();
             });
         },
+        Logout: function() {
+          this.Lock("Logging out...");
+          POST("/api/logout")
+            .then(json => {
+              delete window.localStorage.race;
+              delete window.localStorage.game;
+              window.location.reload();
+            })
+            .catch(fail => {
+              this.error = "Логоаут не удался, попробуйте еще раз...";
+              this.Unlock();
+            });
+        },
         UpdateRace: function(race) {
           var data = this;
           console.log("searching for ", race)
-          data.Lock();
+          data.Lock("Загружаю расу...");
   
           GET("/api/race/" + race + "/games")
             .then(json => {

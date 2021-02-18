@@ -90,14 +90,13 @@
     <script>
       $(function() {
         // Главная точка входа в программу: проверим, залогинены ли мы
-        //  и в зависимости от этого покажем либо главное окно,
-        //  либо попросим залогиниться
+        //  и в зависимости от этого покажем либо главное окно, либо попросим залогиниться
         GET("/api/ping").then(json => {
           console.log("ping ok.")
           if ($GAME != undefined)
             Switch ($PLAYING);
           else
-            Switch ($PROFILE); // если первый пинг ок - открываем окно профайла
+            Switch ($PROFILE);
         })
         .catch(fail => {
           console.log("ping failed.", fail);

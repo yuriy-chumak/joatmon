@@ -789,7 +789,7 @@
     var totalClicksFromCenterToEdge = span / 2;
     var centre = minv + totalClicksFromCenterToEdge;
     var clicksFromCenter = abs(centre - starValue);
-    //- console.log("nhd:", clicksFromCenter / totalClicksFromCenterToEdge)
+    console.log("nhd:", clicksFromCenter / totalClicksFromCenterToEdge)
     return clicksFromCenter / totalClicksFromCenterToEdge;
   }
   
@@ -839,7 +839,7 @@
   
     var h = sqrt(((1 - g) * (1 - g)) + ((1 - t) * (1 - t)) + ((1 - r) * (1 - r))) * (1 - x) * (1 - y) * (1 - z) / sqrt(3.0);
     console.log("hab value:", h);
-    return h;
+    return Math.floor(h * 100) / 100;
   }
   
   // максимальное количество населения на идеальной планете
@@ -880,8 +880,8 @@
     var habitalValue = HabValue(race, planet);
     var growthRate = race.habitat.growth_rate;
   
-    if (race.prt == 0)
-      growthRate *= Global.GrowthFactorHyperExpansion;
+    //- if (race.prt == 0)
+    //-   growthRate *= Global.GrowthFactorHyperExpansion;
   
     var populationGrowth = 0;
     var capacity = Capacity(race, planet) / 100.0;
@@ -890,7 +890,7 @@
       populationGrowth = 0.1 * planet.population * habitalValue;
     else if (capacity < 0.25) // low pop planet
       populationGrowth = planet.population * growthRate / 100.0 * habitalValue;
-    else if (capacity > 0.25 && capacity < 1.0) // // early crowding
+    else if (capacity < 1.0) // // early crowding
     {
       populationGrowth = planet.population * growthRate / 100.0 * habitalValue;
       var crowdingFactor = Global.BaseCrowdingFactor * (1.0 - capacity) * (1.0 - capacity);
@@ -899,9 +899,9 @@
     else if (capacity == 1.0) // full planet
       populationGrowth = 0;
     else if (capacity > 1.0 && capacity < 4.0) // over full planet
-      populationGrowth = Colonists * (capacity - 1) * -4.0 / 100.0; // .04% per 1% over capacity
+      populationGrowth = planet.population * (capacity - 1) * -4.0 / 100.0; // .04% per 1% over capacity
     else if (capacity >= 4.0) // very over full planet: crowding deaths cap at 12%
-      populationGrowth = Colonists * -0.12;
+      populationGrowth = planet.population * -0.12;
             
     // As per vanilla Stars! the minimal colonist growth unit
     // is set as 100 colonists. A planet does not track colonists
