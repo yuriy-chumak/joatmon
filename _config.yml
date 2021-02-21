@@ -4,6 +4,7 @@ email: yuriy.chumak@mail.com
 description: Joatmon
 baseurl: "/joatmon"
 url: "http://yuriy-chumak.github.io/joatmon"
+host: 0.0.0.0
 
 plugins:
 exclude:

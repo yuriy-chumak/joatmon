@@ -1,5 +1,5 @@
 var API = {
-  host: "https://iaaa.ddns.net:8080"
+  host: "https://iaaa.ddns.net"
 };
 
 function nothing(){}
