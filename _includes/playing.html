@@ -96,19 +96,12 @@
   <div class="ui grid">
     <div class="row">
       <div class="four wide column">
-        <!-- ----------------------------------------------------->
-        <!-- Кнопка "давайте жить дальше"-->
-        <div class="fluid mini ui left labeled button" v-on:click="doReady">
-          <div class="ui basic right pointing green label">{{ year }}&nbsp;г.год</div>
-          <div class="fluid mini ui button">Закрыть текущий г.год</div>
-        </div>
         <!-- ---------------------------------------->
         <!-- Описание планеты-->
         <div class="ui card">
           <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
           <div class="content">
-            <div class="ui ribbon label">
-              <!--(v-bind:class='{ green: planet.owner == $RACE, red: (planet.owner != undefined) && (planet.owner != $RACE) }')-->
+            <div class="ui ribbon label" v-bind:class="{ green: planet.owner == race.id, red: planet.owner &amp;&amp; (planet.owner != race.id) }">
               <div class="ui dropdown">
                 <input type="hidden" name="filters"/>
                 <div class="i world icon"></div><span class="text" id="planetname">loading...</span>
@@ -249,9 +242,15 @@
           <!-- заметка об устаревшей информации-->
           <div class="ui bottom attached mini red button" v-if="planet.year &lt; year">Это устаревший отчет за {{ planet.year }} г.год</div>
         </div>
+        <!-- ----------------------------------------------------->
+        <!-- Кнопка "давайте жить дальше"-->
+        <div class="fluid mini ui left labeled button" v-on:click="doReady">
+          <div class="ui basic right pointing green label">{{ year }}</div>
+          <div class="fluid mini ui button">Закрыть текущий г.год</div>
+        </div>
         <!-- ---------------------------------------->
         <!-- Сканеры / защита / производство-->
-        <div class="ui card">
+        <div class="ui card" v-bind:style="[ race.id == planet.owner ? visible : invisible ]">
           <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
           <div class="content">
             <div class="ui ribbon label">Сканеры / Защита / Производство</div>
@@ -312,7 +311,7 @@
         </div>
         <!-- ---------------------------------------->
         <!-- Звездная база на орбите (если есть)-->
-        <div class="ui card">
+        <div class="ui card" v-bind:style="[ race.id == planet.owner ? visible : invisible ]">
           <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
           <div class="content">
             <div class="ui ribbon label">Орбитальная группировка</div>
@@ -365,6 +364,22 @@
             </div>
           </div>
         </div>
+        <!-- ---------------------------------------->
+        <!-- Производство (если есть)-->
+        <div class="ui card" v-bind:style="[ race.id == planet.owner ? visible : invisible ]">
+          <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
+          <div class="content">
+            <div class="ui ribbon label">Производство</div>
+            <div class="ui mini statistics">
+              <div class="statistic">
+                <div class="value">Unlimited</div>
+                <div class="label">Dock Capacity</div>
+              </div>
+            </div>
+            <button class="fluid mini ui button">Флот на орбите</button>
+          </div>
+          <div class="grid extra content"></div>
+        </div>
       </div>
       <!-- -------------------------------------------------------------------------->
       <!-- игровое поле-->
@@ -378,6 +393,12 @@
             <image xlink:href="img/space-background-image3.jpeg" x="0" y="0" height="100%" width="100%"></image>
           </svg>
         </div>
+      </div>
+    </div>
+  </div>
+  <div class="ui grid">
+    <div class="row">
+      <div class="eighteen wide column">
         <!-- Сообщения-->
         <div class="ui raised segment">
           <div class="ui ribbon label">Year {{ year }} Message
@@ -417,6 +438,10 @@
           planet: 0,
         },
         error: undefined,
+  
+        // styles:
+        visible: {},
+        invisible: { display: 'none' },
   
         race: { id: $RACE },
         year: undefined,
@@ -576,8 +601,6 @@
   
           GET(`/api/game/${$GAME}/year`).then(year => this.year = year);
           GET(`/api/race/${$RACE}`).then(race => this.race = race);
-  
-          //- GET("/api/game/" + $GAME + "/planets")
   
           data.Unlock();
   
