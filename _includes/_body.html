@@ -1,0 +1,34 @@
+
+<body>
+  <script src="js/REST.js"></script>
+  <script src="js/generate-star-surface.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.js"></script>{% include ping.html %}
+  {% include profile.html %}
+  {% include playing.html %}
+  {% include login.html %}
+  <script>
+    $(function() {
+      // this parameter will enable/disable the closing for the previous .united modals when the next will be opened :)
+      $('.united.modal').modal({
+        allowMultiple: false,
+      });
+    })
+    
+  </script>
+  <script>
+    $(function() {
+      // Главная точка входа в программу: проверим, залогинены ли мы
+      //  и в зависимости от этого покажем либо главное окно, либо попросим залогиниться
+      GET("/api/ping").then(json => {
+        console.log("ping ok.")
+        if ($GAME != undefined)
+          Switch ($PLAYING);
+        else
+          Switch ($PROFILE);
+      })
+      .catch(fail => {
+        console.log("ping failed.", fail);
+      });
+    });
+  </script>
+</body>
