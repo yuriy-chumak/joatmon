@@ -76,13 +76,12 @@
   <!-- глобальные переменные-->
   <script>
     // текущая сессия (меняется во время логина)
-    $SESSION = window.localStorage.session;
+    var $SESSION = window.localStorage.session;
     
-    $RACE = window.localStorage.race; // раса и игра, которыми и в которую играем
-    $GAME = window.localStorage.game;
+    var $RACE = window.localStorage.race; // раса и игра, которыми и в которую играем
+    var $GAME = window.localStorage.game;
     
-    var app = {};
-    $NONE = { $el: "", Leave: function() {}, Hide: function() {} }; // empty state
+    var $NONE = { $el: "", Leave: function() {}, Hide: function() {} }; // empty state
     
     // текущее состояние клиента
     var $STATE = $NONE;

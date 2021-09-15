@@ -1,5 +1,12 @@
 {% raw %}
-<div class="ui segment screen" id="profile">
+<div class="ui container segment" id="profile" v-bind:style="[ hidden ? {display: 'none'} : {}]">
+  <!-- менюшка-->
+  <div class="ui secondary pointing menu">
+    <div class="item">Jack of All Trades, Master of None</div><a class="active item">TODO 1</a>
+    <!-- Кнопка "давайте жить дальше"--><a class="item">TODO 2</a>
+    <div class="right menu"><a class="ui label item"><i class="power off red large icon" onclick="javascript:Logout()"></i></a></div>
+  </div>
+  <!-- грид-->
   <div class="ui grid">
     <div class="row" style="display: table">
       <div class="twelve wide column">
@@ -52,7 +59,7 @@
                       </td>
                       <td>{{ g.year }}</td>
                       <td>
-                        <button class="mini ui right floated button" v-on:click="GameButtonPressed(g.id)" v-bind:value="g.id">
+                        <button class="mini ui right floated button" v-on:click="GameButtonPressed(r.id, g.id)">
                           {{ g.state == "lobby" ? "View" :
                           g.state == "waiting for orders" ? "Play" :
                           g.state == "orders done" ? "Change orders" :
@@ -78,7 +85,6 @@
           <div class="header"> </div>
           <p>Error: {{ error }}</p>
         </div><br/>
-        <div class="fluid ui button" v-on:click="Logout()">Logout</div>
       </div>
       <div class="four wide stretched column">
         <div class="ui small feed" id="chat" style="overflow-y: auto; max-height: 50vh;">
@@ -102,6 +108,7 @@
 </div>
 <script>
   // окно статистики и профиля игрока (домашнее окно)
+  var
   $PROFILE = new Vue({ el: '#profile',
     // струкрута даных приложения
     data: {
@@ -122,6 +129,9 @@
           message: "Welcome to chat" },
       ],
     },
+    computed: {
+      hidden: () => $STATE != this,
+    },
     methods: {
         // State methods
         Enter: function() {
@@ -141,62 +151,52 @@
         },
   
         // -----------------
-        Update: function() {
-          var data = this;
-          data.Lock("Обновляю...");
-          data.error = undefined;
+        Update: async function() {
+          this.Lock("Обновляю...");
+          this.error = undefined;
   
-          GET("/api/races")
-            .then(json => {
-              console.log("ok:", json)
-              var races = json.reverse();
-              for (var i = 0; i < races.length; i++)
-                  races[i].games = [ ];
+          try {
+            let json = await GET("/api/races");
+            var races = json.reverse();
+            for (var i = 0; i < races.length; i++)
+              races[i].games = [ ];
   
-              data.races = races;
-              data.Unlock();
-              $("#races").accordion('refresh');
-            })
-            .catch(fail => {
-              data.error = "can't get races list";
-              data.Unlock();
-            });
+            this.races = races;
+            $("#races").accordion('refresh');
+          }
+          catch (error) {
+            this.error = "can't get races list";
+          }
+          finally {
+            this.Unlock();
+          }
+  
           //this.UpdateChat();
-        },
-        Logout: function() {
-          this.Lock("Logging out...");
-          POST("/api/logout")
-            .then(json => {
-              delete window.localStorage.race;
-              delete window.localStorage.game;
-              window.location.reload();
-            })
-            .catch(fail => {
-              this.error = "Логоаут не удался, попробуйте еще раз...";
-              this.Unlock();
-            });
-        },
-        UpdateRace: function(race) {
-          var data = this;
-          console.log("searching for ", race)
-          data.Lock("Загружаю расу...");
   
-          GET("/api/race/" + race + "/games")
-            .then(json => {
-              window.localStorage.race = $RACE = race;
-              var games = json.reverse();
-              for (var i = 0; i < data.races.length; i++) {
-                  if (data.races[i].id == race) {
-                    data.races[i].games = games;
-                    break;
-                  }
+          delete window.localStorage.race;
+          delete window.localStorage.game;
+        },
+        UpdateRace: async function(race) {
+          this.Lock("Загружаю расу...");
+          this.error = undefined;
+  
+          try {
+            let json = await GET("/api/race/" + race + "/games");
+  
+            var games = json.reverse();
+            for (var i = 0; i < this.races.length; i++) {
+              if (this.races[i].id == race) {
+                this.races[i].games = games;
+                break;
               }
-              data.Unlock();
-            })
-            .catch( fail => {
-              alert("Can't get games list");
-              data.Unlock();
-            });
+            }
+          }
+          catch (error) {
+            this.error = "can't update race games";
+          }
+          finally {
+            this.Unlock();
+          };
         },
         CreateNewRace: function(event) {
           $RaceWizard.ShowModal();
@@ -205,29 +205,26 @@
           $RaceWizard.ShowModal(o);
           return false;
         },
-        PlayExistingGame: function(game) {
-          $GAME = window.localStorage.game = game;
+        PlayExistingGame: function(rid, gid) {
+          // переключаемся в окно игры, сохраним
+          // это состояние на следующий вход
+          $RACE = window.localStorage.race = rid;
+          $GAME = window.localStorage.game = gid;
   
           Switch($PLAYING);
         },
-        GameButtonPressed: function(id) {
-          console.log("GameButtonPressed")
-          for (var r = 0; r < this.races.length; r++) {
-              for (var g = 0; g < this.races[r].games.length; g++) {
-                if (this.races[r].games[g].id == id) {
-                    var game = this.races[r].games[g];
+        GameButtonPressed: function(rid, gid) {
+          console.log(this.races);
+          let game = this.races.find(r => r.id == rid)
+                         .games.find(g => g.id == gid);
   
-                    // todo: переделать все эти стейты!
-                    game.state == "lobby" ? $GameDialog.ShowModal({game: id}) :
-                    game.state == "waiting for orders" ? $PROFILE.PlayExistingGame(id) :
-                    game.state == "orders done" ? $PROFILE.PlayExistingGame(id) : // todo: alert("are you sure to change your orders?")
-                    game.state == "calculating" ? $PROFILE.PlayExistingGame(id) : // todo: alert("please wait... calculating...")
-                    game.state == "finished" ? alert("todo: View game results") :
-                    alert("something wrong :(");
-                    break;
-                }
-              }
-          }
+          // отреагируем на кнопку в зависимости от состояния игры
+          game.state == "lobby" ? $GameDialog.ShowModal({game: gid}) :
+          game.state == "waiting for orders" ? $PROFILE.PlayExistingGame(rid, gid) :
+          game.state == "orders done" ? $PROFILE.PlayExistingGame(rid, gid) : // todo: alert("are you sure to change your orders?")
+          game.state == "calculating" ? $PROFILE.PlayExistingGame(rid, gid) : // todo: alert("please wait... calculating...")
+          game.state == "finished" ? alert("todo: View game results") :
+          alert("unknown game state!");
         },
         CreateNewGame: function(race) {
           var data = this;

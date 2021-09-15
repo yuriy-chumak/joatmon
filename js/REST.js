@@ -33,7 +33,7 @@ function Throw(error) {
     throw error;
 }
 
-function do_api_request(n, method, timestamp, headers, request, data) {
+async function do_api_request(n, method, timestamp, headers, request, data) {
     arguments[0]++;
 	// console.log("new promise created (", session, ", ", timestamp, ")");
 	if (data != undefined)
@@ -60,6 +60,8 @@ function do_api_request(n, method, timestamp, headers, request, data) {
 				break;
             case 403:
 				$BannedDialog.Show(); // whoopsy
+				break;
+            case 404: // invalid request
 				break;
 			default:
 				$PingDialog.Show();

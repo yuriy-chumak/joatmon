@@ -57,7 +57,6 @@
         fetch(API.host + "/api/login", {
           method: 'POST',
           headers: {
-            'accept': 'application/json',
             'content-type': 'application/json'
           },
           body: JSON.stringify({
@@ -78,15 +77,14 @@
           if ($STATE == $NONE)
             Switch($PROFILE);
         })
-        .catch((error) => {
-          self.loading = false;
-          if (status == 0) { // no connection?
-              self.error = "No connection?";
-          }
-          else
+        .catch((status) => {
+          this.loading = false;
           switch (status) {
+            case 0:
+                self.error = "No connection?";
+                break;
             case 401:
-                self.error = "Invalid login and/or password.";
+                self.error = "Invalid name or/and password.";
                 break;
             case 503:
                 self.error = "Internal server error.";
@@ -105,7 +103,12 @@
   
   function Logout()
   {
-    $SESSION = window.localStorage.session = undefined; // сотрем сессию
+    $SESSION = $GAME = $RACE = undefined;
+  
+    delete window.localStorage.session;
+    delete window.localStorage.game;
+    delete window.localStorage.race;
+  
     location.reload(true);
   }
   

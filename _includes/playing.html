@@ -76,6 +76,7 @@
       check() {
         var data = this;
         console.log("check!");
+  
         GET("/api/race/" + $RACE + "/game/" + $GAME + "/ready")
           .then(json => {
             data.state = json;
@@ -93,12 +94,17 @@
 </script>
 <!-- ===========================================================================================-->
 <!-- главное игровое окно-->
-<div class="ui vertical segment screen" id="playing">
+<div class="ui segment" id="playing" v-bind:class="{ container: !fullscreen }" v-bind:style="[ hidden ? {display: 'none'} : {}]">
   <!-- менюшка-->
   <div class="ui secondary pointing menu">
     <div class="item">Jack of All Trades, Master of None</div><a class="active item">TODO 1</a>
     <!-- Кнопка "давайте жить дальше"--><a class="item">TODO 2</a>
-    <div class="right menu"><a class="ui label item"><i class="power off red large icon" onclick="javascript:Logout()"></i></a></div>
+    <!-- Фулскрин-->
+    <div class="ui checkbox">
+      <input type="checkbox" name="example" v-model="fullscreen"/>
+      <label>Fullscreen</label>
+    </div>
+    <div class="right menu"><a class="ui label item"><i class="list large icon" onclick="javascript:Switch($PROFILE)"></i></a><a class="ui label item"><i class="power off red large icon" onclick="javascript:Logout()"></i></a></div>
   </div>
   <!-- окошки-->
   <div class="ui grid">
@@ -109,7 +115,7 @@
         <div class="ui card">
           <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
           <div class="content">
-            <div class="ui ribbon label" v-bind:class="{ green: planet.owner == race.id, red: planet.owner &amp;&amp; (planet.owner != race.id) }">
+            <div class="ui ribbon label" v-bind:class="{ green: planet.race == race.id, red: planet.race &amp;&amp; (planet.race != race.id) }">
               <div class="ui dropdown">
                 <input type="hidden" name="filters"/>
                 <div class="i world icon"></div><span class="text" id="planetname">loading...</span>
@@ -139,7 +145,7 @@
                 <div class="content" style="zoom: 80%">
                   <div class="header">Население планеты {{ planet.name }} составляет {{ F(population) }} колонистов</div>
                   <div class="description">
-                    <p v-if="planet_value &gt; 0">Эта планета может прокормить не более {{ F(planet_population_max) }} колонистов.</p><span v-if="planet.owner">Население этой планеты вырастет на {{ F(planet_population_grow) }} к следующему г.году и будет составлять {{ F(population + planet_population_grow) }} колонистов.</span>
+                    <p v-if="planet_value &gt; 0">Эта планета может прокормить не более {{ F(planet_population_max) }} колонистов.</p><span v-if="planet.race">Население этой планеты вырастет на {{ F(planet_population_grow) }} к следующему г.году и будет составлять {{ F(population + planet_population_grow) }} колонистов.</span>
                   </div>
                 </div>
                 <div class="content" style="zoom: 80%"><span class="text">Ценность планеты {{ planet.name }} для вашей расы составляет</span><span class="text" v-bind:class="{ red: planet_value &lt; 0, green: planet_value &gt; 0 }">&nbsp;{{ P(planet_value) }}</span></div>
@@ -257,7 +263,7 @@
         </div>
         <!-- ---------------------------------------->
         <!-- Сканеры / защита / производство-->
-        <div class="ui card" v-bind:style="race.id == planet.owner ? visible : invisible">
+        <div class="ui card" v-bind:style="race.id == planet.race ? visible : invisible">
           <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
           <div class="content">
             <div class="ui ribbon label">Сканеры / Защита / Производство</div>
@@ -320,7 +326,7 @@
       <div class="four wide column">
         <!-- ---------------------------------------->
         <!-- Звездная база на орбите (если есть)-->
-        <div class="ui card" v-bind:style="race.id == planet.owner ? visible : invisible">
+        <div class="ui card" v-bind:style="race.id == planet.race ? visible : invisible">
           <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
           <div class="content">
             <div class="ui ribbon label">Орбитальная группировка</div>
@@ -375,7 +381,7 @@
         </div>
         <!-- ---------------------------------------->
         <!-- Производство (если есть)-->
-        <div class="ui card" v-bind:style="race.id == planet.owner ? visible : invisible">
+        <div class="ui card" v-bind:style="race.id == planet.race ? visible : invisible">
           <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
           <div class="content">
             <div class="ui ribbon label">Производство</div>
@@ -439,6 +445,7 @@
 <script src="js/generate-star-surface.js"></script>
 <script>
   // окно статистики и профиля игрока (домашнее окно)
+  var
   $PLAYING = new Vue({ el: '#playing',
     // струкрута даных приложения
     data: {
@@ -448,6 +455,7 @@
           planet: 0,
         },
         error: undefined,
+        fullscreen: false,
   
         // styles:
         visible: {},
@@ -465,6 +473,8 @@
         germanium_conc: undefined,
     },
     computed: {
+      hidden: () => $STATE != this,
+  
       population: function() { return this.planet.population },
       // максимальное количество колонистов, которое
       // способна прокормить идеальная планета
@@ -569,17 +579,17 @@
       }
     },
     methods: {
-        // State methods
-        Enter: function() {
-          this.Update();
-        },
-        Leave: function() { },
-        Lock: function(who) {
-          $(who || this.$el).dimmer('show');
-        },
-        Unlock: function(who) {
-          $(who || this.$el).dimmer('hide');
-        },
+      // State methods
+      Enter: function() {
+        this.Update();
+      },
+      Leave: function() { },
+      Lock: function(who) {
+        $(who || this.$el).dimmer('show');
+      },
+      Unlock: function(who) {
+        $(who || this.$el).dimmer('hide');
+      },
   
         PI: function(field) {
           return F(this.planets[this.index] != undefined ? this.planets[this.index][field] : undefined);
@@ -604,60 +614,52 @@
           return x1 + x2;
         },
   
-        // Form methods
-        // ----------------------------------------------
-        Update: function() {
-          var data = this;
-          data.Lock();
-          data.error = undefined;
+      // Form methods
+      // ----------------------------------------------
+      Update: async function() {
+        var data = this;
+        this.Lock();
+        this.error = undefined;
   
-          GET(`/api/game/${$GAME}/year`).then(year => this.year = year);
-          GET(`/api/race/${$RACE}`).then(race => this.race = race);
+        // todo: try/catch/finally
+        this.year = await GET(`/api/game/${$GAME}/year`);
+        this.race = await GET(`/api/race/${$RACE}`);
   
-          data.Unlock();
+        this.Unlock();
   
-          data.updating.board = true;
-          GET(`/api/game/${$GAME}/planets`, {
-            race: $RACE,
-            year: $PLAYING.year
-          }).then(json => {
-            data.planets = {};
+        // обновляем планеты, перерисуем карту
+        this.updating.board = true;
+        let json = await GET(`/api/game/${$GAME}/planets`, {
+          race: $RACE,
+          year: $PLAYING.year
+        });
+        console.log(json);
   
-            var radius = 1.0;
-            for (var i = 0; i < json.length; i++) {
-              // if normal view
-              draw.circle(2*radius).fill(
-                json[i].owner != false ? 'lightgreen' : 'white'
-              ).move(json[i].x - radius, json[i].y - radius)
+        this.planets = {};
   
-              // if 
-            }
+        var radius = 1.5;
+        for (var i = 0; i < json.length; i++) {
+          console.log(json[i].race)
+          // if normal view
+          draw.circle(2*radius).fill(
+            json[i].race == $RACE ? 'lightgreen' :
+            json[i].race != false ? 'red' :
+            'white'
+          ).move(json[i].x - radius, json[i].y - radius)
+        }
   
-            // обновим планетки
-            for (var i = 0; i < json.length; i++)
-              data.planets[json[i].id] = {...data.planets[json[i].id], ...json[i]};
+        // обновим планетки
+        for (var i = 0; i < json.length; i++)
+          this.planets[json[i].id] = {...this.planets[json[i].id], ...json[i]};
   
-            data.updating.board = false;
+        this.updating.board = false;
   
-            // если никакая планета еще не выбрана (мы только что зашли),
-            // значит надо перейти на главную (дом)
-            if (data.planets_focus == 0)
-              for (var i in data.planets) {
-                if (data.planets[i].owner == $RACE) {
-                  data.planets_focus = i;
-                  break;
-                }
-              }
-            })
-            .catch(fail => {
-              data.error = "can't get races list";
-              data.updating.board = true;
-            });
-        },
+        // TODO: find homeworld
+      },
   
-        doReady() {
-          $ReadyDialog.Show();
-        },
+      doReady() {
+        $ReadyDialog.Show();
+      },
     }
   });
   
