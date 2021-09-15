@@ -1,81 +1,104 @@
 {% raw %}
-<div class="ui segment" id="profile" hidden="true">
-  <!-- header-->
-  <div style="display: flex; flex-flow: row">
-    <h2 class="ui header" style="flex: 1"><i class="folder open icon"></i>
-      <div class="content">Ваши расы (и игры)
-        <div class="sub header">Список всех ваших рас и игр в которые вы играете</div>
-      </div>
-    </h2>
-    <div class="ui buttons" style="flex-wrap: wrap">
-      <div class="or"></div>
-      <button class="ui button" v-bind:class="{ disabled: !isSessionValid() }" v-on:click="CreateNewRace">Create new one</button>
-    </div>
-  </div>
-  <!-- races list-->
-  <div class="ui inverted dimmer" id="races-dimmer">
-    <div class="ui text loader">{{ loader_message }}</div>
-  </div>
-  <div class="ui styled fluid accordion" id="races">
-    <div v-for="r in races">
-      <div class="title"><i class="dropdown icon"></i>{{ r.name }}
-        <button class="ui basic icon compact right floated mini button" v-on:click="function(event) { event.stopPropagation(); ShowExistingRace({race: r.id, readonly: r.readonly })}" v-bind:value="r.id"><i class="icon" v-bind:class="{ edit: !r.readonly, expand: r.readonly }"></i>               {{ r.readonly ? "View" : "Edit" }}</button>
-      </div>
-      <div class="content" v-bind:race="r.id">
-        <p class="transition hidden">
-          <table class="ui unstackable table">
-            <thead>
-              <tr>
-                <th>Игра</th>
-                <!-- название игры-->
-                <th>Состояние</th>
-                <!-- состояние: 0: не начата, 1: и т.д.-->
-                <th>Текущий год</th>
-                <!-- текущий игровой год-->
-                <th></th>
-                <!-- без названия для кнопки Play/View, по кнопке View должна запускаться финальная статистика-->
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="g in r.games">
-                <td>{{ g.name }}</td>
-                <td>
-                  {{ g.state == 0 ? "Lobby" :
-                  g.state ==11 ? "Waiting for orders" :
-                  g.state ==21 ? "Waiting for turn" :
-                  g.state == 2 ? "Doing the turn" :
-                  g.state == 3 ? "Finished." :
-                  "Unknown" }}
-                </td>
-                <td>{{ g.year }}</td>
-                <td>
-                  <button class="mini ui right floated button" v-on:click="GameButtonPressed(g.id)" v-bind:value="g.id">
-                    {{ g.state == 0 ? "View" :
-                    g.state ==11 ? "Play" :
-                    g.state ==21 ? "Change orders" :
-                    g.state == 2 ? "Refresh info" :
-                    g.state == 3 ? "View game results" :
-                    "Send Error Report" }}
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </p>
-        <div class="fluid ui buttons">
-          <button class="ui button" v-on:click="JoinExistingGame(r.id)">Join EXISTING Game</button>
-          <div class="or"></div>
-          <button class="ui button" v-on:click="CreateNewGame(r.id)">Create NEW Game</button>
+<div class="ui segment screen" id="profile">
+  <div class="ui grid">
+    <div class="row" style="display: table">
+      <div class="twelve wide column">
+        <!-- header-->
+        <div style="display: flex; flex-flow: row">
+          <h2 class="ui header" style="flex: 1"><i class="folder open icon"></i>
+            <div class="content">Ваши расы (и игры)
+              <div class="sub header">Список всех ваших рас и игр в которые вы играете</div>
+            </div>
+          </h2>
+          <div class="ui buttons" style="flex-wrap: wrap">
+            <div class="or"></div>
+            <button class="ui button" v-bind:class="{ disabled: !isSessionValid() }" v-on:click="CreateNewRace">Create new one</button>
+          </div>
         </div>
-        <p></p>
+        <!-- races list-->
+        <div class="ui inverted dimmer" id="races-dimmer">
+          <div class="ui text loader">{{ loader_message }}</div>
+        </div>
+        <div class="ui styled fluid accordion" id="races">
+          <div v-for="r in races">
+            <div class="title"><i class="dropdown icon"></i>{{ r.name }}
+              <button class="ui basic icon compact right floated mini button" v-on:click="function(event) { event.stopPropagation(); ShowExistingRace({race: r.id, readonly: r.readonly })}" v-bind:value="r.id"><i class="icon" v-bind:class="{ edit: !r.readonly, expand: r.readonly }"></i>               {{ r.readonly ? "View" : "Edit" }}</button>
+            </div>
+            <div class="content" v-bind:race="r.id">
+              <p class="transition hidden">
+                <table class="ui unstackable table">
+                  <thead>
+                    <tr>
+                      <th>Игра</th>
+                      <!-- название игры-->
+                      <th>Состояние</th>
+                      <!-- состояние: 0: не начата, 1: и т.д.-->
+                      <th>Текущий год</th>
+                      <!-- текущий игровой год-->
+                      <th></th>
+                      <!-- без названия для кнопки Play/View, по кнопке View должна запускаться финальная статистика-->
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="g in r.games">
+                      <td>{{ g.name }}</td>
+                      <td>
+                        {{ g.state == "lobby" ? "Lobby" :
+                        g.state == "waiting for orders" ? "Waiting for orders" :
+                        g.state == "orders done" ? "Waiting for turn" :
+                        g.state == "calculating" ? "The game is calculating" :
+                        g.state == "finished" ? "Finished." :
+                        "Unknown" }}
+                      </td>
+                      <td>{{ g.year }}</td>
+                      <td>
+                        <button class="mini ui right floated button" v-on:click="GameButtonPressed(g.id)" v-bind:value="g.id">
+                          {{ g.state == "lobby" ? "View" :
+                          g.state == "waiting for orders" ? "Play" :
+                          g.state == "orders done" ? "Change orders" :
+                          g.state == "calculating" ? "Refresh info" :
+                          g.state == "finished" ? "View game results" :
+                          "Send Error Report" }}
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </p>
+              <div class="fluid ui buttons">
+                <button class="ui button" v-on:click="JoinExistingGame(r.id)">Join EXISTING Game</button>
+                <div class="or"></div>
+                <button class="ui button" v-on:click="CreateNewGame(r.id)">Create NEW Game</button>
+              </div>
+              <p></p>
+            </div>
+          </div>
+        </div>
+        <div class="ui error message" v-bind:class="{ hidden: error == undefined }">
+          <div class="header"> </div>
+          <p>Error: {{ error }}</p>
+        </div><br/>
+        <div class="fluid ui button" v-on:click="Logout()">Logout</div>
+      </div>
+      <div class="four wide stretched column">
+        <div class="ui small feed" id="chat" style="overflow-y: auto; max-height: 50vh;">
+          <div class="event" v-for="c in chat">
+            <div class="content">
+              <div class="summary">
+                <p>{{ c.name }} sad {{ c.message }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ui fluid mini input focus" v-bind:class="{ disabled: message.sending }">
+          <div class="ui inverted dimmer" v-bind:class="{ active: message.sending }">
+            <div class="ui loader"></div>
+          </div>
+          <input type="text" placeholder="Enter something to say..." v-model="message.text" @keyup.enter="submit" v-bind:class="{ error: message.error, loading: message.sending, disabled: message.sending }"/>
+        </div>
       </div>
     </div>
   </div>
-  <div class="ui error message" v-bind:class="{ hidden: error == undefined }">
-    <div class="header"> </div>
-    <p>Error: {{ error }}</p>
-  </div><br/>
-  <div class="fluid ui button" v-on:click="Logout()">Logout</div>
 </div>
 <script>
   // окно статистики и профиля игрока (домашнее окно)
@@ -85,14 +108,29 @@
       loading: false,
       races: [ ],
       error: undefined,
-      loader_message: "Updating..."
+      loader_message: "Updating...",
+  
+      timestamp: 0, // timestamp of last message
+  
+      message: {
+        text: "",
+        sending: false,
+        error: undefined,
+      },
+      chat: [
+        { name: "Server",
+          message: "Welcome to chat" },
+      ],
     },
     methods: {
         // State methods
         Enter: function() {
+          this.timestamp = 0; // restart chat
           this.Update();
         },
-        Leave: function() {},
+        Leave: function() {
+          this.timestamp = undefined; // stop
+        },
         
         Lock: function(message) {
           this.loader_message = message;
@@ -123,6 +161,7 @@
               data.error = "can't get races list";
               data.Unlock();
             });
+          //this.UpdateChat();
         },
         Logout: function() {
           this.Lock("Logging out...");
@@ -179,11 +218,11 @@
                     var game = this.races[r].games[g];
   
                     // todo: переделать все эти стейты!
-                    game.state == 0 ? $GameDialog.ShowModal({game: id}) :
-                    game.state == 11? $PROFILE.PlayExistingGame(id) :
-                    game.state == 21? $PROFILE.PlayExistingGame(id) : // todo: alert("are you sure to change your orders?")
-                    game.state == 2 ? $PROFILE.PlayExistingGame(id) :
-                    game.state == 3 ? alert("todo: View game results") :
+                    game.state == "lobby" ? $GameDialog.ShowModal({game: id}) :
+                    game.state == "waiting for orders" ? $PROFILE.PlayExistingGame(id) :
+                    game.state == "orders done" ? $PROFILE.PlayExistingGame(id) : // todo: alert("are you sure to change your orders?")
+                    game.state == "calculating" ? $PROFILE.PlayExistingGame(id) : // todo: alert("please wait... calculating...")
+                    game.state == "finished" ? alert("todo: View game results") :
                     alert("something wrong :(");
                     break;
                 }
@@ -218,8 +257,44 @@
         // хелперы
         isSessionValid: function() {
           return $SESSION != undefined;
-        }
+        },
   
+        // Chat
+        submit: function() {
+          this.message.sending = true;
+          POST("/api/chat", this.message.text)
+            .then(json => {
+              this.message.error = undefined;
+              this.message.sending = false;
+              this.message.text = "";
+              this.UpdateChat(); // force update chat
+            })
+            .catch(fail => {
+              this.message.error = fail;
+              this.message.sending = false;
+            });
+        },
+        UpdateChat: function() {
+          if (this.timestamp == undefined)
+            return; // stop spamming server for chat messages
+          GET("/api/chat/" + this.timestamp)
+            .then(json => {
+              var chat = $("#chat")[0];
+  
+              var follow = chat.offsetHeight + chat.scrollTop >= chat.scrollHeight;
+  
+              json = json.filter(i => !this.chat.find(j => i.id == j.id)) // remove possible duplicate items
+              this.chat = this.chat.concat(json);
+              this.timestamp = json.reduce((total, item) => Math.max(total, item.id), this.timestamp)
+              if (follow)
+                emit(() => $("#chat").scrollTop(chat.scrollHeight)); // scroll down the chat
+  
+              emit(() => this.UpdateChat(), 5000);
+            })
+            .catch(fail => {
+              emit(() => this.UpdateChat(), 20000);
+            });
+        }
     }
   });
   $("#races").accordion({
@@ -228,4 +303,8 @@
         $PROFILE.UpdateRace(this[0].attributes.race.value);
     }
   });
+  
+  function handleChatInput(e) {
+    console.log(e)
+  }
 </script>{% endraw %}

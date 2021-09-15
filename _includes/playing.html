@@ -1,5 +1,5 @@
 {% raw %}
-<div class="small modal" id="ready-dialog" style="display: none;">
+<div class="small modal screen" id="ready-dialog">
   <div class="ui segment">
     <div class="ui icon message"><i class="notched circle loading icon"></i>
       <div class="content">
@@ -58,7 +58,8 @@
       // скажем серверу, что мы готовы
       SendReady() {
         var data = this;
-        PUT(`/api/race/${$RACE}/game/${$GAME}/ready`, {
+        PUT(`/api/game/${$GAME}/ready`, {
+          race: $RACE,
           year: $PLAYING.year
         }).then(json => {
           console.log("JSON: ", json)
@@ -92,7 +93,14 @@
 </script>
 <!-- ===========================================================================================-->
 <!-- главное игровое окно-->
-<div class="ui segment" id="playing" hidden="true">
+<div class="ui vertical segment screen" id="playing">
+  <!-- менюшка-->
+  <div class="ui secondary pointing menu">
+    <div class="item">Jack of All Trades, Master of None</div><a class="active item">TODO 1</a>
+    <!-- Кнопка "давайте жить дальше"--><a class="item">TODO 2</a>
+    <div class="right menu"><a class="ui label item"><i class="power off red large icon" onclick="javascript:Logout()"></i></a></div>
+  </div>
+  <!-- окошки-->
   <div class="ui grid">
     <div class="row">
       <div class="four wide column">
@@ -242,15 +250,14 @@
           <!-- заметка об устаревшей информации-->
           <div class="ui bottom attached mini red button" v-if="planet.year &lt; year">Это устаревший отчет за {{ planet.year }} г.год</div>
         </div>
-        <!-- ----------------------------------------------------->
-        <!-- Кнопка "давайте жить дальше"-->
+        <!-- Закрыть текущий год-->
         <div class="fluid mini ui left labeled button" v-on:click="doReady">
           <div class="ui basic right pointing green label">{{ year }}</div>
           <div class="fluid mini ui button">Закрыть текущий г.год</div>
         </div>
         <!-- ---------------------------------------->
         <!-- Сканеры / защита / производство-->
-        <div class="ui card" v-bind:style="[ race.id == planet.owner ? visible : invisible ]">
+        <div class="ui card" v-bind:style="race.id == planet.owner ? visible : invisible">
           <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
           <div class="content">
             <div class="ui ribbon label">Сканеры / Защита / Производство</div>
@@ -309,9 +316,11 @@
             </div>
           </div>
         </div>
+      </div>
+      <div class="four wide column">
         <!-- ---------------------------------------->
         <!-- Звездная база на орбите (если есть)-->
-        <div class="ui card" v-bind:style="[ race.id == planet.owner ? visible : invisible ]">
+        <div class="ui card" v-bind:style="race.id == planet.owner ? visible : invisible">
           <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
           <div class="content">
             <div class="ui ribbon label">Орбитальная группировка</div>
@@ -366,7 +375,7 @@
         </div>
         <!-- ---------------------------------------->
         <!-- Производство (если есть)-->
-        <div class="ui card" v-bind:style="[ race.id == planet.owner ? visible : invisible ]">
+        <div class="ui card" v-bind:style="race.id == planet.owner ? visible : invisible">
           <div class="ui grey right corner label" v-bind:class="{ hidden: updating.planet == 0 }"><i class="spinner loading icon"></i></div>
           <div class="content">
             <div class="ui ribbon label">Производство</div>
@@ -383,7 +392,7 @@
       </div>
       <!-- -------------------------------------------------------------------------->
       <!-- игровое поле-->
-      <div class="twelve wide column">
+      <div class="eight wide column">
         <div class="ui raised segment" id="board">
           <div class="ui dimmer" v-bind:class="{ active: updating.board }">
             <div class="ui loader"></div>
@@ -396,6 +405,7 @@
       </div>
     </div>
   </div>
+  <!-- сообщения-->
   <div class="ui grid">
     <div class="row">
       <div class="eighteen wide column">
@@ -527,32 +537,34 @@
         // update planet data (if not previously updated in this year)
         if (this.planets[focus].timestamp != this.year) {
           this.updating.planet++;
-          GET("/api/race/" + $RACE + "/game/" + $GAME + "/planet/" + focus)
-            .then(json => {
-              console.log(this);
-              console.log("json: ", json)
+          GET(`/api/game/${$GAME}/planet/${focus}`, {
+            race: $RACE,
+            year: $PLAYING.year
+          }).then(json => {
+            console.log(this);
+            console.log("json: ", json)
   
-              // обновим поверхность планеты
-              this.planets[focus].surface = json.surface
-              if (this.planets_focus == focus)
-                drawSurface(this.planets[focus].surface);
+            // обновим поверхность планеты
+            this.planets[focus].surface = json.surface
+            if (this.planets_focus == focus)
+              drawSurface(this.planets[focus].surface);
   
-              // и остальную информацию про планету
-              console.log("this.planets[focus]: ", this.planets[focus])
-              this.planets[focus] = {...this.planets[focus], ...json};
-              console.log("this.planets[focus]: ", this.planets[focus])
+            // и остальную информацию про планету
+            console.log("this.planets[focus]: ", this.planets[focus])
+            this.planets[focus] = {...this.planets[focus], ...json};
+            console.log("this.planets[focus]: ", this.planets[focus])
   
-              this.planet = this.planets[focus];
-              this.planet.timestamp = this.year;
-              this.updating.planet--;
+            this.planet = this.planets[focus];
+            this.planet.timestamp = this.year;
+            this.updating.planet--;
   
-              //- HabValue(this.race, this.planet);
-              //- CalculateGrowth(this.race, this.planet);
-            })
-            .catch(fail => {
-              console.log("fail: ", fail)
-              this.updating.planet--;
-            });
+            //- HabValue(this.race, this.planet);
+            //- CalculateGrowth(this.race, this.planet);
+          })
+          .catch(fail => {
+            console.log("fail: ", fail)
+            this.updating.planet--;
+          });
         }
       }
     },
@@ -605,36 +617,37 @@
           data.Unlock();
   
           data.updating.board = true;
-          GET(`/api/race/${$RACE}/game/${$GAME}/planets`)
-            .then(json => {
-              data.planets = {};
+          GET(`/api/game/${$GAME}/planets`, {
+            race: $RACE,
+            year: $PLAYING.year
+          }).then(json => {
+            data.planets = {};
   
-              var radius = 1.0;
-              for (var i = 0; i < json.length; i++) {
-                // if normal view
-                draw.circle(2*radius).fill(
-                  json[i].owner != false ? 'lightgreen' : 'white'
-                ).move(json[i].x - radius, json[i].y - radius)
+            var radius = 1.0;
+            for (var i = 0; i < json.length; i++) {
+              // if normal view
+              draw.circle(2*radius).fill(
+                json[i].owner != false ? 'lightgreen' : 'white'
+              ).move(json[i].x - radius, json[i].y - radius)
   
-                // if 
+              // if 
+            }
+  
+            // обновим планетки
+            for (var i = 0; i < json.length; i++)
+              data.planets[json[i].id] = {...data.planets[json[i].id], ...json[i]};
+  
+            data.updating.board = false;
+  
+            // если никакая планета еще не выбрана (мы только что зашли),
+            // значит надо перейти на главную (дом)
+            if (data.planets_focus == 0)
+              for (var i in data.planets) {
+                if (data.planets[i].owner == $RACE) {
+                  data.planets_focus = i;
+                  break;
+                }
               }
-  
-              // обновим планетки
-              for (var i = 0; i < json.length; i++)
-                data.planets[json[i].id] = {...data.planets[json[i].id], ...json[i]};
-  
-              data.updating.board = false;
-  
-              // если никакая планета еще не выбрана (мы только что зашли),
-              // значит надо перейти на главную (дом)
-              if (data.planets_focus == 0)
-                GET("/api/race/" + $RACE + "/game/" + $GAME + "/homeworld")
-                  .then(json => {
-                    data.planets_focus = json;
-                  })
-                  .catch(fail => {
-                    data.error = "can't get races list";
-                  });
             })
             .catch(fail => {
               data.error = "can't get races list";
