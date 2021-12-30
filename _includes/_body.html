@@ -7,6 +7,14 @@
   {% include playing.html %}
   {% include login.html %}
   <script>
+    // для каждого dropdown, для которого хочется кастомную обработку надо завести свой
+    // javascript выхов .dropdown('setting', 'onChange', function(...))
+    $('.ui.dropdown')
+      .dropdown(); // как вариант, можно добавить класс "simple" к dropdown элементу
+    // отдельный вызов не нужен
+    $('.popping-up').popup();
+    $('.progress').progress();
+    
     $(function() {
       // this parameter will enable/disable the closing for the previous .united modals when the next will be opened :)
       $('.united.modal').modal({
@@ -16,7 +24,7 @@
     
   </script>
   <script>
-    $(function() {
+    $(document).ready(function(){
       // Главная точка входа в программу: проверим, залогинены ли мы
       //  и в зависимости от этого покажем либо главное окно, либо попросим залогиниться
       GET("/api/ping").then(json => {

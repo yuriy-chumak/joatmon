@@ -176,7 +176,7 @@
           delete window.localStorage.race;
           delete window.localStorage.game;
         },
-        UpdateRace: async function(race) {
+        ReloadRace: async function(race) {
           this.Lock("Загружаю расу...");
           this.error = undefined;
   
@@ -233,7 +233,7 @@
           $GameDialog.ShowModal({
               race: race,
               ok: function(o) {
-                data.UpdateRace(o.race);
+                data.ReloadRace(o.race);
               }
           });
         },
@@ -244,7 +244,7 @@
           $JoinDialog.ShowModal({
               race: race,
               ok: function() {
-                data.UpdateRace(race);
+                data.ReloadRace(race);
               }
           });
         },
@@ -294,11 +294,17 @@
         }
     }
   });
-  $("#races").accordion({
-    onOpening: function () {
-        // let's update race games table
-        $PROFILE.UpdateRace(this[0].attributes.race.value);
-    }
+  
+</script>
+<script>
+  $(document).ready(function(){
+    // note: ...
+    $("#races").accordion({ onOpening: 
+      function () {
+        $PROFILE.ReloadRace(this[0].attributes.race.value);
+      }
+    });
+    
   });
   
   function handleChatInput(e) {

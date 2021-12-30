@@ -31,8 +31,8 @@
       loading: false, // "in progress" dialog state
       error: undefined, // error message
   
-      email: "user@1", //window.location.hostname == "127.0.0.1" ? "user@1" : "user@2",   // temp
-      password: "123456", //window.location.hostname == "127.0.0.1" ? "123456" : "223456",// temp
+      email: "user@1",
+      password: "123456",
     },
     methods: {
       Show: function(error) {
@@ -80,11 +80,15 @@
         .catch((status) => {
           this.loading = false;
           switch (status) {
+            case 401:
+                self.error = "Invalid name or/and password.";
+                return;
+            // Other errors
             case 0:
                 self.error = "No connection?";
                 break;
-            case 401:
-                self.error = "Invalid name or/and password.";
+            case 502:
+                self.error = "Server inaccessible.";
                 break;
             case 503:
                 self.error = "Internal server error.";
@@ -93,7 +97,7 @@
                 self.error = "Error " + status + ".";
                 break;
           }
-          self.error += " Please, try again."
+          self.error += " " + "Please try again a bit later."
         });
   
         return false;
