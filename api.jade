@@ -1,0 +1,31 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    title Jack of All Trades, Master of None API
+    link(href="img/favicon_ico.png", rel="icon", type="image/png")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0, viewport-fit=cover")
+
+    //- стили
+    link(href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css", rel="stylesheet", type="text/css")
+
+  body
+    #swagger-ui
+    //- скрипты
+    //- script(src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js")
+    script(src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js")
+    script(src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js")
+    script.
+      window.onload = () => {
+        window.ui = SwaggerUIBundle({
+          url: "api.yaml",
+          dom_id: '#swagger-ui',
+          validatorUrl: null,
+          presets: [
+            SwaggerUIBundle.presets.apis,
+            SwaggerUIStandalonePreset
+          ],
+          layout: "StandaloneLayout"
+        });
+      };
+

@@ -1,0 +1,273 @@
+doctype html
+html(lang="en", data-theme="dark")
+  head
+    meta(charset="UTF-8")
+    title Jack of All Trades, Master of None
+    link(href="img/favicon_ico.png", rel="icon", type="image/png")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0, viewport-fit=cover")
+
+    script.
+      // главная функция переключения темы:
+      const SwitchTheme = (savedTheme) => {
+        const systemTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const theme = savedTheme || systemTheme;
+        console.log(savedTheme, systemTheme, theme)
+        if (theme)
+          document.documentElement.setAttribute('data-theme', theme);
+      };
+      // сразу установим тему еще до загрузки основного документа
+      SwitchTheme(sessionStorage.getItem('currentTheme')); // immediately apply saved theme
+
+
+    //- стили
+    link(href="cdn/bulma@1.0.4/bulma.min.css", rel="stylesheet", type="text/css")
+
+    //- шрифты
+    link(href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap", rel="stylesheet" disabled)
+
+    //- icons
+    link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css')
+    link(rel='stylesheet' href='https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css')
+    
+
+    //- скрипты
+    script(src="cdn/jquery@3.7.1/jquery.min.js")
+
+    //- Используем глобальный билд Vue 3,
+    //- чтобы vue была видна всем модулям
+    script(src="cdn/vue@3.5.32/vue.global.js")
+    //- script(src="cdn/vue-i18n@9/vue-i18n.global.js")
+
+    script(src="cdn/svg@3.2.0/svg.min.js", defer)
+
+    style.
+      .popover {
+        display: none;
+        position: absolute;
+        max-width: 280px;
+        z-index: 1000;
+      }
+    script(src="js/popover.js", type="module", defer)
+
+    //- избегаем FOUC (Flash of Unstyled Content)
+    style.
+      [v-cloak] {
+        display: none !important;
+      }
+
+      /* цветные рамки элементов */
+      .border-box {
+        border: 1px solid var(--bulma-primary);
+        border-bottom: none;
+      }
+      @media screen and (min-width: 769px) {
+      .border-box {
+        margin-right: -1px;
+      }}
+
+      .border-box:last-child {
+        border-bottom: 1px solid var(--bulma-primary);
+      }
+      .border-bottom {
+        border-bottom: 1px solid var(--bulma-primary);
+      }
+
+      .border-text { border-color: var(--bulma-text); }
+      .border-primary { border-color: var(--bulma-primary); }
+
+      /* скрывающаяся подкнопка */
+      .hover-button {
+        opacity: 0;
+        pointer-events: none; /* Кнопку нельзя нажать, пока она невидима */
+        transition: opacity 0.2s ease-in-out;
+      }
+      .button:hover .hover-button {
+        opacity: 1;
+        pointer-events: auto; /* Возвращаем возможность клика */
+      }
+
+      /* не-интерактивные */
+      .is-deaf {
+        pointer-events: none;
+      }
+
+      /* общие цвета для Semantic */
+      [data-theme~='semantic'] {
+        --bulma-family-primary: 'Lato', sans-serif;
+        --bulma-body-size: 16px; /* default is 16 */
+
+        /*
+        --bulma-background
+        --bulma-border*/
+
+        /* не работает */
+        --bulma-navbar-item-background-a: 0.4;
+
+        /* #2185d0 - "выбранный" цвет */
+        --bulma-primary-h: 205.714;
+        --bulma-primary-s: 84.135%;
+        --bulma-primary-l: 81.569%;
+      }
+
+      /* специфичные цвета для Semantic Light */
+      [data-theme='light semantic'] {}
+
+      /* специфичные цвета для Semantic Dark */
+      [data-theme='dark semantic'] {}
+
+      /* custom colors */
+      :root {
+        --blue: #0077ee;
+        --green: #00ee77;
+        --yellow: #eede00;
+      }
+
+      .is-blue { color: var(--blue); }
+      .is-green { color: var(--green); }
+      .is-yellow { color: var(--yellow); }
+
+      /* фиксим таблицы */
+      .table.is-borderless td,
+      .table.is-borderless th {
+        border: none;
+        padding-top: 0;
+        padding-bottom: 0;
+        padding-left: 0.25rem;  /* px-1 */
+        padding-right: 0.25rem; /* px-1 */
+      }
+
+
+    // components css styles
+    include components.pug
+  body#body
+    script.
+      const { ref, getCurrentInstance } = Vue;
+
+    //- локализация и интернационализация
+    script(src="cdn/i18n.js")
+
+    script.
+      window.$setLocale(
+        sessionStorage.getItem('currentLang') || navigator.language.split('-')[0] || 'en'
+      );
+
+    script.
+      //- глобальные информационные переменные
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+      //- регистрационный ивент vue компонент
+      window.onVueReady = (callback) => {
+        if (window.VueApp)
+          callback(window.VueApp);
+        else
+          window.addEventListener('vue-app-ready', (e) => callback(e.detail), { once: true });
+      };
+
+      //- спецметод проверки объекта на пустоту
+      Object.defineProperty(Object.prototype, 'isEmpty', {
+        value: function() {
+          // Проверяем, что это действительно простой объект (а не null или массив)
+          return Object.keys(this).length === 0 && this.constructor === Object;
+        },
+        enumerable: false, // Скрывает метод в циклах for...in
+        writable: false, // Запрещает переопределение
+        configurable: false // Запрещает удаление метода через delete
+      });
+
+      //- возвращает объект с индексами, которые совпадают с полем id
+      Object.defineProperty(Array.prototype, 'toIdMap', {
+        value: function(key = 'id') {
+          return this.reduce((acc, item) => {
+            acc[item[key]] = item;
+            return acc;
+          }, {});
+        },
+        enumerable: false,
+        writable: false,
+        configurable: false
+      });
+      Object.defineProperty(Object.prototype, 'filter', {
+        value: function(predicate) {
+          return Object.entries(this)
+            .filter(([key, value]) => predicate(value, key, this))
+            .reduce((acc, [key, value]) => {
+              acc[key] = value;
+              return acc;
+            }, {});
+        },
+        enumerable: false,
+        writable: false,
+        configurable: false
+      });
+      //- Object.defineProperty(Object.prototype, 'some', {
+      //-   value: function(predicate) {
+      //-     const entries = Object.entries(this);
+      //-     for (const [key, value] of entries) {
+      //-       if (predicate(value, key, this)) {
+      //-         return true;
+      //-       }
+      //-     }
+      //-     return false;
+      //-   },
+      //-   enumerable: false,
+      //-   writable: false,
+      //-   configurable: false
+      //- });
+
+    script.
+      // перехватчик всей сетевой активности
+      const originalFetch = window.fetch;
+      window.fetch = function(...args) {
+          //- resetInactivityTimer();
+          return originalFetch.apply(this, args);
+      };    
+      window.addEventListener('online', () => console.log("Интернет вернулся!"));
+      window.addEventListener('offline', () => console.log("Интернет пропал!"));
+
+      // упрощение api запросов
+      const POST = (url, data) => fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+      });
+
+    script(src="js/star-surface-generator.js")
+    script.
+      const wrappedPaint = Module.cwrap('paint', 'void',
+        ['number','number','number','number','number']);
+
+      function generateSurface(surface) {
+        var c = document.getElementById('surface');
+        console.log("surface: ", surface)
+        var w = 64;
+        var h = 64;
+        c.width = w;
+        c.height = h;
+      
+        var ctx = c.getContext('2d');
+        var imageData = ctx.getImageData(0,0,w,h);
+        var bufSize = w * h * 4;
+        var bufPtr = Module._malloc(bufSize);
+        var buf = new Uint8Array(Module.HEAPU8.buffer, bufPtr, bufSize);
+      
+        var seed = surface;
+        var type = surface + surface;
+        if (surface) {
+          wrappedPaint(buf.byteOffset, w, h, seed, type);
+          imageData.data.set(buf);
+          ctx.putImageData(imageData,0,0);
+        }
+        else {
+          //var image = document.getElementById('unknownp');
+          //ctx.drawImage(image, 0, 0, w, h);
+        }
+      }
+
+    //- Main Window
+    include main.pug
+    script(src="main.js" type="module")
+
+    script.
+      $(document).ready(async () => {
+        Main();// запустим приложение
+      });

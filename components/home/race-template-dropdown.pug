@@ -1,0 +1,51 @@
+script#race-template-dropdown-template(type="text/x-template")
+  .dropdown.is-block(:class="{ 'is-active': active }")
+    .dropdown-trigger(:class="{ 'is-deaf': race.readonly }",
+                      @click="active = !active")
+      button.button.is-small.is-fullwidth(aria-haspopup='true', :aria-controls='id'
+                                         :class="{ 'is-primary': templates[race.template] != null }")
+        span {{ (templates[race.template] || {name: "* Оригинальная"}).name }}
+        span.icon.is-small
+          i.fas.fa-angle-down(aria-hidden='true')
+    .dropdown-menu(role='menu', :id="id")
+      .dropdown-content
+        a.dropdown-item(v-for="(template, index) in templates.filter(template => template.id != race.id)", :key="index",
+                       :class="{ 'is-active': template.id == race.template }")
+          span {{ template.name }}
+
+//- 
+script.
+  window.onVueReady((app) => {
+    app.component('race-template-dropdown', {
+      props: [
+        'race', 'templates'
+      ],
+      template: '#race-template-dropdown-template',
+
+      setup(props) {
+        const $el = getCurrentInstance();
+        const id ='dropdown-menu-' + Math.random().toString(36).substr(2, 9);
+
+        // local variables (and handlers)
+        const active = ref(false);
+        const handleOutsideClick = (event) => {
+          const dropdown = $el.vnode.el;
+          if (!dropdown.contains(event.target))
+            active.value = false;
+        };
+
+        return { id, active, handleOutsideClick };
+      },
+
+      watch: {
+        active(v, old) {
+          if (v == old)
+            return;
+          if (v)
+            document.addEventListener('click', this.handleOutsideClick);
+          else
+            document.removeEventListener('click', this.handleOutsideClick);
+        }
+      },
+    });
+  });

@@ -1,0 +1,88 @@
+include /components.pug
+style.
+  .is-multicolumn {
+    column-count: 2;
+    column-gap: 0.5rem;
+  }
+  .is-multicolumn > * {
+    break-inside: avoid;
+  }
+  .planet {
+  }
+
+script#game-template(type="text/x-template")
+  .columns.is-gapless
+    .column.is-one-third.is-flex.is-flex-direction-column.border-box.border-bottom.m-0.p-0
+      div.is-multicolumn.p-1
+        //- Кнопки действия
+        div.p-1
+          .field.is-grouped
+            .control.is-expanded
+              button.button.is-small.is-warning.is-fullwidth(@click="$emit('home')")
+                | {{ $t('Exit') }}
+            .control.is-expanded
+              button.button.is-small.is-success.is-fullwidth(@click="Ready(false)")
+                | {{ $t('Turn') }}
+        div.p-1
+          button.button.is-small.is-primary.is-fullwidth(@click="Ready(true)")
+            | {{ $t('Turn and Exit') }}
+
+        //- Карточки планеты
+        planet-brief-card(:show="show_planet_cards", :planet="planet", :year="game.year", @next="SelectNextPlanet", @prev="SelectPrevPlanet")
+        planet-minerals-card(:show="show_planet_cards", :planet="planet", :year="game.year")
+        planet-status-card(:show="show_planet_cards", :planet="planet", :year="game.year")
+        planet-debug-card(:show="show_planet_cards", :planet="planet", :year="game.year")
+        planet-orbiting-card(:show="show_planet_cards", :planet="planet", :year="game.year")
+        planet-production-card(:show="show_planet_cards", :planet="planet", :year="game.year")
+        planet-starbase-card(:show="show_planet_cards", :planet="planet", :year="game.year")
+
+
+        //- Карточки космического корабля/флота
+        //- TODO:
+
+        div.border-box.border-bottom.mt-1(v-show="!show_planet_cards")
+          .block Ship Name
+          img.image.is-48x48.ml-0.mr-3
+          div Prev / Next / Rename
+
+        div.border-box.border-bottom.mt-1(v-show="!show_planet_cards")
+          .block Orbiting Planet
+          div Goto / Do
+
+        div.border-box.border-bottom.mt-1(v-show="!show_planet_cards")
+          .block Fleet Waypoint
+          div Do / Do / Do
+
+        div.border-box.border-bottom.mt-1(v-show="!show_planet_cards")
+          .block Waypoint Task
+          div Do / Do / Do
+
+        div.border-box.border-bottom.mt-1(v-show="!show_planet_cards")
+          .block Fuel & Cargo
+          div Do / Do / Do
+
+        div.border-box.border-bottom.mt-1(v-show="!show_planet_cards")
+          .block Fleet Composition
+          div Do / Do / Do
+
+        div.border-box.border-bottom.mt-1(v-show="!show_planet_cards")
+          .block Order Fleet Here
+          div Do / Do / Do
+
+      .grid.is-flex-grow-1.m-0
+      //- .grid.m-0.p-1
+      //-   button.button.is-small.is-fullwidth(@click="UpdatePlanetsList")
+      //-     | (temp) update planets list
+      .grid.m-0.p-1
+        .cell.border-box.border-bottom.m-0.p-1
+          | some text
+
+    .column.m-0.p-0
+      div(style="background-image: url('img/space-3.jpeg'); background-size: cover; background-position: center;")
+        svg#svg(width="100%", viewBox="0 0 400 400", @click="svgClicked")
+      div.border-box.border-bottom
+        .grid.m-0.p-1
+          .cell.border-box.border-bottom.m-0.p-1
+            | planet additional info
+    //- 
+    world-calculating-template(:open="game_state > 0", @stop="StopWaiting", :game_state="game_state")

@@ -1,0 +1,19 @@
+script#race-card-header-template(type="text/x-template")
+  .media
+    .media-left
+      span.icon.is-large.mr-3
+        i.fas.fa-2x(:class="[icon]")
+    .media-content
+      .title.is-4 {{ title }}
+      .subtitle.is-6 {{ subtitle }}
+
+//--------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('race-card-header', {
+      template: '#race-card-header-template',
+      props: [
+        'title', 'subtitle', 'icon'
+      ]
+    });
+  });

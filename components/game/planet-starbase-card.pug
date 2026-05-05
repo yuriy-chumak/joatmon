@@ -1,0 +1,60 @@
+include /components.pug
+script#planet-starbase-card-template(type="text/x-template")
+  div.border-box.border-bottom.mt-1.p-2(v-show="show")
+    planet-card-header(title="Starbase", icon="fa-shield-halved", :year="planet.year - year")
+
+    +hr.info
+    div.is-flex.is-justify-content-space-between
+      div Dock Capacity
+      div ???
+    //-   planet-mineral-popover(name="Ferrium", :mineral="planet.ferrium",
+    //-                                          :concentration="planet.ferrium_conc",
+    //-                                           mining_rate="???")
+    div.is-flex.is-justify-content-space-between
+      div Armor
+      div ???
+    div.is-flex.is-justify-content-space-between
+      div Shields
+      div ???
+    div.is-flex.is-justify-content-space-between
+      div Damage
+      div ???
+
+    +hr.text
+    div.is-flex.is-justify-content-space-between
+      div Mass Driver
+      div ???
+    div.is-flex.is-justify-content-space-between
+      div Destination
+      div ???
+
+    //- TODO: сделать разумные обработчики кнопок
+    .columns.is-1
+      .column
+        button.button.is-small.is-fullwidth.disabled(disabled) Set Destination
+
+//----------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-starbase-card', {
+      template: '#planet-starbase-card-template', 
+      props: [
+        'show',   // показывать ли карточку
+        'year',   // текущий год
+        'planet', // ссылка на объект-планету
+      ],
+
+      setup(props) {
+        return {  };
+      },
+
+      mounted() {
+        console.log("--- mounted ---");
+        window.setupPopovers(this.$el);
+      },
+      beforeUnmount() {
+        console.log("--- unmounted ---");
+        window.cleanupPopovers(this.$el);
+      }
+    });
+  });

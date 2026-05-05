@@ -1,0 +1,18 @@
+script#server-status-button-template(type="text/x-template")
+  span.tag(:class="{ 'is-success': serverStatus == 'online',\
+                     'is-danger':  serverStatus == 'broken' }")
+    span Сервер
+    span.icon(v-show="serverStatus == undefined") 
+      span &nbsp;
+      i.fa.fa-spinner.fa-spin
+    span(v-show="serverStatus == 'online'") &nbsp;online
+    span(v-show="serverStatus == 'broken'") &nbsp;обновился
+
+//- 
+script.
+  window.onVueReady((app) => {
+    app.component('server-status-button', {
+      props: ['serverStatus'],
+      template: '#server-status-button-template'
+    });
+  });

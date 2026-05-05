@@ -1,0 +1,30 @@
+script#planet-mineral-popover-template(type="text/x-template")
+  .popover
+    table.table.is-narrow.is-borderless.has-background.bordered
+      tbody
+        tr
+          td.has-text-centered(colspan="2")
+            | {{ name }}
+        tr
+          td.has-text-right On Surface:
+          td.has-text-left {{ mineral ?? "??" }} kT
+        tr
+          td.has-text-right Mineral Concentration:
+          td.has-text-left {{ concentration ?? "??" }} (HW))
+        tr
+          td.has-text-right Mining Rate:
+          td.has-text-left {{ mining_rate ?? "??" }} kT/y
+
+//----------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-mineral-popover', {
+      template: '#planet-mineral-popover-template', 
+      props: [
+        'name',
+        'mineral',
+        'concentration',
+        'mining_rate',
+      ],
+    });
+  });

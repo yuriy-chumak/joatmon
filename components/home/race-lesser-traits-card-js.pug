@@ -1,0 +1,11 @@
+script.
+  export const RaceLesserTraitsCard = {
+      props: ['race', 'description'],
+      setup(props) {
+          const traits = [
+              { id:     1, name: "#{T('factories', { max: 2 })}" },
+              { id:     2, name: "#{T('improved_fuel_efficiency')}" },
+          ];
+          return { traits };
+      }
+  };

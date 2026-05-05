@@ -1,0 +1,54 @@
+script#dropdown-template(type="text/x-template")
+  .dropdown.is-block(:class="{ 'is-active': active }")
+    .dropdown-trigger(@click="active = !active")
+      button.button.is-small.is-fullwidth(aria-haspopup='true', :aria-controls='id')
+        span Dropdown xx
+        span.icon.is-small
+          i.fas.fa-angle-down(aria-hidden='true')
+    .dropdown-menu(role='menu', :id="id")
+      .dropdown-content
+        a.dropdown-item Dropdown item
+        a.dropdown-item  Other dropdown item
+        a.dropdown-item.is-active(href='#')  Active dropdown item
+        a.dropdown-item(href='#')  Other dropdown item
+        hr.dropdown-divider
+        a.dropdown-item(href='#')  With a divider          console.log("click", event.target)
+
+
+//- 
+script.
+  window.onVueReady((app) => {
+    app.component('dropdown', {
+      props: [
+        'race', 'templates'
+      ],
+      template: '#dropdown-template',
+
+      setup(props) {
+        const $el = getCurrentInstance();
+
+        const id ='dropdown-menu-' + Math.random().toString(36).substr(2, 9);
+
+        // local variables (and handlers)
+        const active = ref(false);
+        const handleOutsideClick = (event) => {
+          const dropdown = $el.vnode.el;
+          if (!dropdown.contains(event.target))
+            active.value = false;
+        };
+
+        return { id, active, handleOutsideClick };
+      },
+
+      watch: {
+        active(v, old) {
+          if (v == old)
+            return;
+          if (v) // подпишемся
+            document.addEventListener('click', this.handleOutsideClick);
+          else // отпишемся
+            document.removeEventListener('click', this.handleOutsideClick);
+        }
+      },
+    });
+  });

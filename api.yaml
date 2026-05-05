@@ -1,0 +1,553 @@
+openapi: "3.0.0"
+# форматирование: https://spec.commonmark.org/0.27/
+# внутренние кросслинки: https://swagger.io/docs/specification/links/
+info:
+  version: "1.0"
+  title: "JoATmon API"
+  description: "JoATmon API"
+  termsOfService: "https://www.gnu.org/licenses/gpl-3.0.html"
+  license:
+    name: "GPLv3"
+    url: "https://www.gnu.org/licenses/gpl-3.0.html"
+
+servers:
+  - url: https://127.0.0.1:6060/joatmon/
+    description: Локальный сервер
+
+paths:
+  # -----------------------------------------------------------------------------
+  /api/whoami:
+    get:
+      summary: Кто я?
+      security:
+        - CookieAuth: []
+      description: |
+        Если неизвестно что делать или непонятно что происходит - делай *api/whoami*.  
+        *С whoami, кстати, стоит все и начинать.*
+      tags:
+        - Base
+
+      responses:
+        "200":
+          description: "OK"
+        "401":
+          description: "Unauthorized"
+
+
+#   /api/about:
+#     get:
+#       summary: Информация о сервере
+#       description: |
+#         Выводит аптайм, имя и версию сервера, сколько системных ресурсов задействовано
+#         (в том числе сколько оперативной памяти используется).
+#       tags:
+#         - Common
+
+#       responses:
+#         "200":
+#           description: "**OK**"
+
+#   # -----------------------------------------------------------------------------
+#   /api/login:
+#     post:
+#       summary: Авторизация (логин)
+#       description: |
+#         Используется для авторизации игрока на сервере в привязке его к аккаунту.
+#         Только один аккаунт пользователя может работать одновременно.
+#       tags:
+#         - Login/Logout
+
+#       requestBody:
+#         required: true
+#         content:
+#           application/json:
+#             schema:
+#               $ref: "#/components/schemas/Credentials"
+#             examples:
+#               first:
+#                 summary: User 1
+#                 value:
+#                   login: "user@1"
+#                   password: "123456"
+#               second:
+#                 summary: User 2
+#                 value:
+#                   login: "user@2"
+#                   password: "223456"
+#               third:
+#                 summary: User 3
+#                 value:
+#                   login: "user@3"
+#                   password: "323456"
+
+#       responses:
+#         "200":
+#           description: "**OK**"
+#           content:
+#             application/json:
+#               schema:
+#                 type: object
+#                 properties:
+#                   name:
+#                     type: string
+#                     description: |
+#                       Имя пользователя под которым он видим для других игроков.
+#                   session:
+#                     type: string
+#                     description: |
+#                       Уникальный одноразовый сессионный ключ, используется для аутентификации всех вызовов API
+#                       через поле заголовка "X-JOATMON-SID".
+#         "401":
+#           description: |
+#             **Unauthorized**   
+#             Логин и/или пароль не подходят.
+#         "403":
+#           description: |
+#             **Forbidden**   
+#             Логин и пароль подошли, но доступ запрещен (юзер временно забанен или аккаунт деактивирован)
+#   /api/logout:
+#     post:
+#       summary: Завершение сеанса (выход)
+#       description: |
+#         Используется для выхода из аккаунта игрока на сервере.
+#         После выхода функции api (кроме сервисных) будут недоступны.
+#       tags:
+#         - Login/Logout
+
+#       security:
+#         - ApiKeyAuth: []
+#       responses:
+#         "200":
+#           description: "**OK**"
+#         "401":
+#           $ref: "#/components/responses/Unauthorized"
+#         "403":
+#           $ref: "#/components/responses/Forbidden"
+
+  # -----------------------------------------------------------------------------
+  /api/races: # Cписок всех рас игрока
+    get:
+      summary: Cписок всех рас игрока
+      description: |
+        Получить список всех рас игрока
+      tags:
+        - Race
+
+      security:
+        - CookieAuth: []
+      responses:
+        "200":
+          description: "**OK**"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      $ref: '#/components/schemas/RaceId'
+                    name:
+                      $ref: '#/components/schemas/RaceName'
+                    readonly:
+                      type: boolean
+                      description: |
+                        True, если расу нельзя редактировать (она участвовала хотя бы в одной завершенной игре или участвует в текущей).
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+#   /api/race-templates:
+#     get:
+#       summary: Cписок универсальных рас-заготовок
+#       description: |
+#         Получить список всех универсальных рас-заготовок, на основании которых можно создавать свои новые расы.   
+#         Это проверенные временем сбалансированные расы.
+#       tags:
+#         - Race
+
+#       security:
+#         - ApiKeyAuth: []
+#       responses:
+#         "200":
+#           description: "**OK**"
+#           content:
+#             application/json:
+#               schema:
+#                 type: array
+#                 items:
+#                   type: object
+#                   properties:
+#                     id:
+#                       $ref: '#/components/schemas/Race Id'
+#                     name:
+#                       $ref: '#/components/schemas/Race Name'
+#                     readonly:
+#                       type: boolean
+#                       description: |
+#                         Всегда true. Эту расу нельзя редактировать (кроме, естественно, самого Демиурга).
+#         "401":
+#           $ref: "#/components/responses/Unauthorized"
+#         "403":
+#           $ref: "#/components/responses/Forbidden"
+#   /api/races/{raceId}:
+#     get:
+#       summary: Полное описание расы (своей или шаблонной)
+#       description: |
+#         Получить полное описание своей расы или универсальной расы-заготовки
+#       tags:
+#         - Race
+
+#       security:
+#         - ApiKeyAuth: []
+#       parameters:
+#         - in: path
+#           name: raceId
+#           required: true
+#           schema:
+#             type: integer
+#       responses:
+#         "200":
+#           description: "**OK**"
+#           content:
+#             application/json:
+#               schema:
+#                 type: array
+#                 items:
+#                   type: object
+#                   properties:
+#                     id:
+#                       $ref: '#/components/schemas/Race Id'
+#                     name:
+#                       $ref: '#/components/schemas/Race Name'
+#                     template:
+#                       type: integer
+#                       description: |
+#                         Какая раса послужила заготовкой (если послужила)
+#                     prt:
+#                       $ref: '#/components/schemas/PRT'
+#                     lrts:
+#                       $ref: '#/components/schemas/LRTs'
+#                     habitat:
+#                       type: object
+#                       properties:
+#                         immunity:
+#                           type: integer
+#                           description: |
+#                             Иммунность к условиям окружающей среды
+#                             * 1, независимость от гравитации
+#                             * 2, независимость от температуры
+#                             * 4, независимость от радиации
+#                           minimum: 0
+#                           maximum: 7
+#                         gravity:
+#                           type: array
+#                           description: |
+#                             Диапазон естественной гравитации для расы
+#                           items:
+#                             type: integer
+#                             minimum: 0
+#                             maximum: 100
+#                           minItems: 2
+#                           maxItems: 2
+#                         temperature:
+#                           type: array
+#                           description: |
+#                             Диапазон естественной температуры для расы
+#                           items:
+#                             type: integer
+#                             minimum: 0
+#                             maximum: 100
+#                           minItems: 2
+#                           maxItems: 2
+#                         radiation:
+#                           type: array
+#                           description: |
+#                             Диапазон естественной радиации для расы
+#                           items:
+#                             type: integer
+#                             minimum: 0
+#                             maximum: 100
+#                           minItems: 2
+#                           maxItems: 2
+#                         growth_rate:
+#                           type: integer
+#                           description: |
+#                             Скорость роста расы в идеальных условиях (в процентах)
+#                           minimum: 1
+#                           maximum: 20
+#                     economy:
+#                       type: object
+#                       properties:
+#                         resources_generation_divider:
+#                           type: integer
+#                           description: |
+#                             Делитель производства ресурсов колонистами:
+#                             * для AR расы: Annual Resources = Planet Value * sqrt( Population * Energy Tech / N )
+#                             * для остальных: cколько ресурсов будут генерировать сами колонисты,
+#                               то есть (N * 100) колонистов будут генерировать 1 ресурс.
+#                           minimum: 7
+#                           maximum: 25
+#                         factory_production:
+#                           type: integer
+#                           description: |
+#                             Cколько ресурсов будут производить 10 фабрик за 1 год.  
+#                             То есть 1 фабрика будет в среднем генерировать N/10 ресурсов.
+#                           minimum: 5
+#                           maximum: 15
+#                         factory_build_cost:
+#                           type: integer
+#                           description: |
+#                             Cколько ресурсов необходимо для постройки одной фабрики.
+#                           minimum: 5
+#                           maximum: 25
+#                         factory_build_discount:
+#                           type: boolean
+#                           description: |
+#                             Удешевление постройки фабрик.
+#                             Если сброшен, то постройка фабрики строит 4 kt Ger, если выбран, то 3 kt.
+#                         factory_limitation:
+#                           type: integer
+#                           description: |
+#                             Каким количеством фабрик могут управлять колонисты.  
+#                             Фактически задает верхнюю границу развития ваших фабрик, — чем больше этот параметр, тем больше фабрик потенциально можно построить.
+#                           minimum: 5
+#                           maximum: 25
+#                         mine_production:
+#                           type: integer
+#                           description: |
+#                             Как много минералов будут добывать 10 шахт за 1 год.  
+#                             То есть 1 шахта будет в среднем добывать N/10 минералов каждого типа.
+#                             Данный параметр действителен только для наземных сооружений.
+#                             Удаленная добыча минералов всегда имеет эффективность 10 kt на 10 эквивалентных шахт.
+#                           minimum: 5
+#                           maximum: 25
+#                         mine_build_cost:
+#                           type: integer
+#                           description: |
+#                             Cколько ресурсов необходимо для постройки одной шахты.  
+#                           minimum: 2
+#                           maximum: 15
+#                         mine_limitation:
+#                           type: integer
+#                           description: |
+#                             Каким количеством шахт могут управлять колонисты.
+#                             Фактически задает верхнюю границу развития ваших шахт, — чем больше этот параметр, тем больше шахт потенциально можно построить.
+#                           minimum: 5
+#                           maximum: 25
+#                     science:
+#                       type: object
+#                       properties:
+#                         energy_cost_multiplier:
+#                           type: integer
+#                           description: |
+#                             Цена развития энергетического комплекса  
+#                             (энергетические щиты на кораблях, системы планетарной защиты, устройства посылки межпланетрных пакетов, …)
+#                         weapons_cost_multiplier:
+#                           type: integer
+#                           description: |
+#                             Цена развития систем вооружения  
+#                             (торпеды и ракеты, лазеры, бомбы, …)
+#                         propulsion_cost_multiplier:
+#                           type: integer
+#                           description: |
+#                             Цена развития силовых установок  
+#                             (двигатели, системы повешения маневрирования в бою, межпланетные гейты, …)
+#                         construction_cost_multiplier:
+#                           type: integer
+#                           description: |
+#                             Цена развития строительства  
+#                             (корпуса кораблей и орбитальных станций, компоненты брони, дополнительные топливные и емкостные баки, …)
+#                         electronics_cost_multiplier:
+#                           type: integer
+#                           description: |
+#                             Цена развития электроники  
+#                             (сканеры как планетарные, так и корабельные; системы отклонения ракет; устройства сокрытия от сканеров противника;
+#                             системы повышения точности и инициативности боевых устройств; усилители лазера; …)
+#                         biotechnology_cost_multiplier:
+#                           type: integer
+#                           description: |
+#                             Цена развития биотехнологий  
+#                             (биотехнологии по развитию терраформинга, мины, «умные» бомбы, био-сканеры и био-броня, …)
+#                         extra_techs_easy_start:
+#                           type: boolean
+#                           description: |
+#                             Все технологии, которые были выбраны выше как «Costs 75% extra» стартуют как минимум с 3-го (или 4-го, если JoAT) уровня.  
+#                             Данная особенность хорошо себя проявляет в случае, если галактика достаточно мала и очень важно присутствие начального уровня некоторых технологий.
+#   /api/races/{raceId}/games: # Список игр, в которых участвует раса
+#     get:
+#       summary: Список всех игр в которых участвует раса
+#       description: |
+#         Получить список всех игр в которых участвует раса
+#       tags:
+#         - Race
+#         - Game
+#   /api/races/{raceId}/games/{gameId}/ready: # Cостояние хода игрока
+#     get:
+#       summary: Состояние хода игрока
+#       description: |
+#         * 0, если игрок еще не походил
+#         * 1, если походил и ждет нового года
+#         * 2, игра обновляет состояние
+#       tags:
+#         - Race
+#         - Game
+#     put:
+#       summary: Состояние хода игрока
+#       description: Сообщить игре решение игрока относительно хода
+#       requestBody:
+#         required: true
+#         content:
+#           application/json:
+#             schema:
+#               $ref: "#/components/schemas/Ready"
+        
+#   /api/games/{gameId}/year: # Текущий игровой год
+#     get:
+#       summary: Получить текущий игровой год
+#   /api/games/{gameId}/state: # Состояние игры
+#     get:
+#       summary: Получить текущее состояние игры
+#   /api/games/{gameId}/planets: # список планет игры
+#     get:
+#       summary: Получить список планет игры (название и координаты)
+
+#   /api/races/{raceId}/games/{gameId}/planets: # Список планет
+#     get:
+#       summary: Получить список планет игры (с характеристиками, если своя)
+#   /api/races/{raceId}/games/{gameId}/planets/{planetId}: # Информация о планете
+#     get:
+#       summary: Получить детальную информацию о планете; или исторические данные, если не своя
+
+# .............................
+components:
+  securitySchemes:
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+
+#   # общие коды ошибок
+#   responses:
+#     Unauthorized: # 401
+#       description: |
+#         **Unauthorized**   
+#         Пользователь не авторизован, пожалуйста выполните `/api/login`
+#     Forbidden: # 403
+#       description: |
+#         **Forbidden**   
+#         Пользователь временно забанен или аккаунт деактивирован.
+#     NotFound: # 404
+#       description: |
+#         **Not Found**   
+#         Запрошенный ресурс отсутствует, не принадлежит или не доступен пользователю.
+
+#   # типы передаваемых объектов
+#   schemas:
+#     Credentials:
+#       type: "object"
+#       required:
+#         - login
+#         - password
+#       properties:
+#         login:
+#           type: "string"
+#           description: Логин
+#         password:
+#           type: "string"
+#           description: Пароль
+#     Race:
+#       type: object
+#       properties:
+#         id:
+#           type: integer
+#         name:
+#           type: string
+#     RaceId:
+#       type: integer
+#       description: |
+#         Уникальный идентификатор расы
+#     RaceName:
+#       type: string
+#       description: |
+#         Уникальное имя расы.
+#     PRT:
+#       type: integer
+#       description: |
+#         Primary Racial Trait
+#         * 0, Hyper-Expansion (HE)  
+#           Быстрая экспансия в галактике.
+#         * 1, Super Stealth (SS)  
+#           Улучшенные способности к невидимости.
+#         * 2, War Monger (WM)  
+#           Атакующая раса, сильна в атаке и оружии, слаба в защите.
+#         * 3, Claim Adjuster (CA)  
+#           Ориентация на терраформинг — изменение условий планет под себя.
+#         * 4, Inner-Strength (IS)  
+#           Защитная раса, сложно атаковать и проще защищаться.
+#         * 5, Space Demolition (SD)  
+#           Мастера установки минных полей.
+#         * 6, Packet Physics (PP)  
+#           Специализация в пакетных движках.
+#         * 7, Interstellar Traveler (IT)  
+#           Специальные способности и возможности в гейтовании кораблей и грузов.
+#         * 8, Alternate Reality (AT)  
+#           Раса живет не на поверхности планет, а на орбите в старбазах.
+#         * 9, Jack of All Trades (JoAT)  
+#           Без серьезных недостатков и сильных преимуществ.
+#       minimum: 0
+#       maximum: 9
+#     LRTs:
+#       type: integer
+#       description: |
+#         Lesser Racial Traits
+#         * 1, Improved Fuel Efficiency (IFE)  
+#           Улучшенное использование топлива.
+#         * 2, No Ram Scoop Engines (NRSE)  
+#           Нет двигателей RamScoop.
+#         * 4, Total Terraforming (TT)  
+#           Улучшенный терраформинг.
+#         * 8, Cheap Engines (CE)  
+#           Дешевые двигатели.
+#         * 16, Advanced Remote Mining (ARM)  
+#           Улучшенное удаленная добыча.
+#         * 32, Only Basic Remote Mining (OBRM)  
+#           Только базовая удаленная добыча.
+#         * 64, Improved Starbases (ISB)  
+#           Улучшенные орбитальные станции.
+#         * 128, No Advanced Scanners (NAS)  
+#           Нет продвинутых сканеров.
+#         * 256, Generalized Research (GR)  
+#           Децентрализованное изучение наук.
+#         * 512, Low Starting Population (LSP)  
+#           Уменьшенная популяция на старте.
+#         * 1024, Ultimated Recycling (UR)  
+#           Улучшенная переработка.
+#         * 2048, Bleeding Edge Technology (BET)  
+#           Передовые технологии.
+#         * 4096, Mineral Alchemy (MA)  
+#           Алхимия минералов.
+#         * 8192, Regenerating Shields (RS)  
+#           Восстанавливающиеся щиты.
+#       minimum: 0
+#       maximum: 16383
+#     Ready:
+#       type: object
+#       properties:
+#         year:
+#           type: integer
+#           description: Текущий код (контрольное поле)
+#             Если не установлен - берется актуальный на момент игры
+#         set:
+#           type: boolean
+#           description: |
+#             * true - сообщить, что ход сделан
+#             * false - отменить готовность и позволить перепланировать ход
+#       required:
+#         - set
+
+
+# externalDocs:
+#   description: "Stars!"
+#   url: "https://www.elite-games.ru/stars/"

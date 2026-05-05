@@ -1,0 +1,78 @@
+script#choose-lang-dropdown-template(type="text/x-template")
+  .navbar-item.has-dropdown(:class="{ 'is-active': active }")
+    a.navbar-link(@click="activateMenu")
+      .icon.is-small.px-3
+        i.fas.fa-language(:aria-controls='id', aria-haspopup='true')
+    .navbar-dropdown.is-boxed
+      a.navbar-item(v-for="lang in flags", @click="chooseLang(lang.name)",
+                   :class="{ 'is-active' : currentLang === lang.value }")
+        span.icon.is-small
+          i.fi(:class="[ lang.flag ]")
+        span {{ lang.name }}
+
+//- 
+script.
+  window.onVueReady((app) => {
+    app.component('choose-lang-dropdown', {
+      props: [],
+      template: '#choose-lang-dropdown-template',
+
+      setup(props, { emit }) {
+        const $el = getCurrentInstance();
+        const id ='dropdown-menu-' + Math.random().toString(36).substr(2, 9);
+        const currentLang = ref(sessionStorage.getItem('currentLang'));
+
+        const flags = [
+          { name: 'ru', value: 'ru', flag: 'fi-xx' },
+          { name: 'en', value: 'en', flag: 'fi-gb' },
+          { name: 'ua', value: 'ua', flag: 'fi-ua' },
+          { name: 'System', value:  null,  flag: 'fi-xx' }
+        ];
+
+        // local variables (and handlers)
+        const active = ref(false);
+        const handleOutsideClick = (event) => {
+          const dropdown = $el.vnode.el;
+          if (!dropdown.contains(event.target))
+            active.value = false;
+        };
+        const activateMenu = () => {
+          currentLang.value = sessionStorage.getItem('currentLang');
+          console.log("currentLang.value: ", currentLang.value)
+          active.value = !active.value;
+        };
+        const chooseLang = (lang) => {
+          const value = flags.find(i => i.name == lang).value;
+          currentLang.value = value;
+          active.value = false; // close menu
+
+          if (value) {
+            window.$setLocale(value);
+            sessionStorage.setItem('currentLang', value)
+          }
+          else { // clear saved system
+            sessionStorage.removeItem('currentLang');
+            window.$setLocale(navigator.language.split('-')[0] || 'en');
+          }
+          emit('ok')
+        };
+
+        return { id, flags, currentLang, active, activateMenu, handleOutsideClick, chooseLang };
+      },
+
+      watch: {
+        active(v, old) {
+          if (v == old)
+            return;
+          if (v)
+            document.addEventListener('click', this.handleOutsideClick);
+          else
+            document.removeEventListener('click', this.handleOutsideClick);
+        }
+      },
+
+      mounted() {
+        console.log("mounted")
+      }
+    });
+  });

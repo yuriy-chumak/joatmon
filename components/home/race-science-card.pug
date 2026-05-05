@@ -1,0 +1,35 @@
+script#race-science-card-template(type="text/x-template")
+  .card(:class="{ 'is-deaf': race.readonly }")
+    .card-content.p-2
+      .media
+        .media-left
+          span.icon.is-large.mr-3
+            i.fas.fa-brain.fa-2x
+        .media-content
+          .title.is-4 Sciense
+          .subtitle.is-6 Technology research multipliers
+      //- список технологий
+      .columns.is-multiline.is-variable.is-1
+        .column.is-full(v-for="trait in traits")
+          .is-flex
+            .icon-text
+              span.icon.has-text-info
+                i.fas(:class="[ trait.icon ]")
+              span {{ trait.name }}
+            .mr-auto
+            .buttons.are-small
+              .button
+                .icon(:class="{ 'has-text-primary': race.science[trait.key] == 50 }")
+                  i.fas.fa-gauge-high.fa-2x.fa-flip-horizontal
+              .button
+                .icon(:class="{ 'has-text-primary': race.science[trait.key] == 100 }")
+                  i.fas.fa-gauge.fa-2x
+              .button
+                .icon(:class="{ 'has-text-primary': race.science[trait.key] == 175 }")
+                  i.fas.fa-gauge-high.fa-2x
+
+
+//-   label All 'Costs 75% extra' research fields start at Tech 3 (4, if you are JoAT)
+//- .ui.flowing.popup
+//-   | Все технологии, которые были выбраны выше как «Costs +75% extra» стартуют как минимум с 3-го (или 4-го, если JOAT) уровня.
+//-   | Если уже выполнен уровень (например 5-й уровень Elec при выборе SS), то пункт в данной ветке ничего не дает.

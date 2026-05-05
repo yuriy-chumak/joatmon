@@ -1,0 +1,13 @@
+{
+	"compile-hero.disable-compile-files-on-did-save-code": true,
+	"git.ignoreLimitWarning": true,
+
+	"i18n-ally.localesPaths": "cdn/i18n",
+	"i18n-ally.sourceLanguage": "en",
+	"i18n-ally.enabledParsers": ["js"],
+	"i18n-ally.enabledFrameworks": [
+		"general",
+		"custom" // pug
+	],
+	"i18n-ally.keystyle": "nested",
+}

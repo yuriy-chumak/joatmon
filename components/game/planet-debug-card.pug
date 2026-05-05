@@ -1,0 +1,39 @@
+include /components.pug
+script#planet-debug-card-template(type="text/x-template")
+  div.border-box.border-bottom.mt-1.p-2(v-show="show")
+    planet-card-header(title="Debug", icon="fa-bug-slash")
+
+    +hr.info
+    div.is-flex.is-justify-content-space-between
+      div Id
+      div {{ planet.id }}
+    div.is-flex.is-justify-content-space-between
+      div Year
+      div {{ planet.year }}
+
+
+//----------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-debug-card', {
+      template: '#planet-debug-card-template', 
+      props: [
+        'show',   // показывать ли карточку
+        'year',   // текущий год
+        'planet', // ссылка на объект-планету
+      ],
+
+      setup(props) {
+        return {  };
+      },
+
+      mounted() {
+        console.log("--- mounted ---");
+        window.setupPopovers(this.$el);
+      },
+      beforeUnmount() {
+        console.log("--- unmounted ---");
+        window.cleanupPopovers(this.$el);
+      }
+    });
+  });

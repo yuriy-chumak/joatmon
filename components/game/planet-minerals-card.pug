@@ -1,0 +1,63 @@
+include /components.pug
+script#planet-minerals-card-template(type="text/x-template")
+  div.border-box.border-bottom.mt-1.p-2(v-show="show")
+    planet-card-header(:title="$t('Minerals on Hand')", icon="fa-chart-simple", :year="planet.year - year")
+
+    +hr.info
+    div.is-flex.is-justify-content-space-between
+      .fe {{ $t('Ferrium') }}
+      div {{ planet.ferrium ?? "??" }} kT
+      planet-mineral-popover(name="Ferrium", :mineral="planet.ferrium",
+                                             :concentration="planet.ferrium_conc",
+                                              mining_rate="???")
+
+    div.is-flex.is-justify-content-space-between
+      .ur {{ $t('Uranite') }}
+      div {{ planet.uranite ?? "??" }} kT
+      planet-mineral-popover(name="Uranite", :mineral="planet.uranite",
+                                             :concentration="planet.uranite_conc",
+                                              mining_rate="???")
+
+    div.is-flex.is-justify-content-space-between
+      .ga {{ $t('Gallite') }}
+      div {{ planet.gallite ?? "??" }} kT
+      planet-mineral-popover(name="Gallite", :mineral="planet.gallite",
+                                             :concentration="planet.gallite_conc",
+                                              mining_rate="???")
+
+    +hr.text
+
+    div.is-flex.is-justify-content-space-between
+      div {{ $t('Mines') }}
+      div {{ planet.mines ?? "??" }} of ???
+      planet-mine-popover(:mines="planet.mines", operable="???", maximal="???")
+    div.is-flex.is-justify-content-space-between
+      div {{ $t('Factories') }}
+      div {{ planet.factories ?? "??" }} of ???
+      planet-factory-popover(:factories="planet.factories", operable="???", maximal="???")
+
+//----------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-minerals-card', {
+      template: '#planet-minerals-card-template', 
+      props: [
+        'show',   // показывать ли карточку
+        'year',   // текущий год
+        'planet', // ссылка на объект-планету
+      ],
+
+      setup(props) {
+        return {  };
+      },
+
+      mounted() {
+        console.log("--- mounted ---");
+        window.setupPopovers(this.$el);
+      },
+      beforeUnmount() {
+        console.log("--- unmounted ---");
+        window.cleanupPopovers(this.$el);
+      }
+    });
+  });

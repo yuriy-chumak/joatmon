@@ -1,0 +1,24 @@
+script#planet-factory-popover-template(type="text/x-template")
+  .popover(style="max-width: 320px;")
+    table.table.is-narrow.is-borderless.has-background.bordered
+      tbody
+        tr
+          td.has-text-centered(colspan="2")
+            | {{ $t('Manufacturing info') }}
+        tr
+          td.has-text-justified(colspan="2", style="line-height: 1.2;")
+            | {{ $t('you-have-N-factories-on-planet', factories ?? "??") }}.
+            br
+            | {{ $t('you-may-build-ip-to-N-factories', maximal ?? "??") }};
+            | {{ $t('however-...-operating-only-N-of-them', operable ?? "??") }}.
+
+//----------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-factory-popover', {
+      template: '#planet-factory-popover-template', 
+      props: [
+        'factories', 'operable', 'maximal',
+      ],
+    });
+  });

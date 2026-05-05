@@ -1,0 +1,142 @@
+- if (typeof css === 'undefined') { css = {}; }
+
+//- semantic-ui colors:
+//-  * primary
+//-  * secondary
+//-  * positive
+//-  * negative
+//-  + my: warning (orange)
+//- semantic-ui additinal colors:
+//-  * red
+//-  * orange
+//-  * yellow
+//-  * olive
+//-  * green
+//-  * teal
+//-  * blue
+//-  * violet
+//-  * purple
+//-  * pink
+//-  * brown
+//-  * grey
+//-  * black
+
+//- bulma colors:
+//-  * --bulma-text
+//-    --bulma-text-light
+//-    --bulma-text-dark
+//-    --bulma-text-soft
+//-    --bulma-text-soft-invert
+//-    --bulma-text-bold
+//-    --bulma-text-bold-invert
+//-  * --bulma-primary
+//-  * --bulma-link
+//-  * --bulma-info
+//-  * --bulma-success
+//-  * --bulma-warning
+//-  * --bulma-danger
+//- неучтенные цвета?
+//-  * --bulma-black
+//-  * --bulma-white
+//-  * --bulma-light
+//-  * --bulma-dark
+//-  * --bulma-code
+//-  * --bulma-pre
+
+
+//- разделительная линия
+if !css.hr
+  - css.hr = true
+  // главные системные цвета ()
+  style.
+    /*[data-theme~= 'semantic'] {
+        --bulma-primary-h: 205.714;
+        --bulma-primary-s: 84.135%;
+        --bulma-primary-l: 81.569%;
+    }*/
+
+  // цвета color:
+  style.
+    :root {
+      --color-red:    #db2828;
+      --color-orange: #f2711c;
+      --color-yellow: #fbbd08;
+      --color-olive:  #b5cc18;
+      --color-green:  #21ba45;
+      --color-teal:   #00b5ad;
+      --color-blue:   #2185d0;
+      --color-violet: #6435c9;
+      --color-purple: #a333c8;
+      --color-pink:   #e03997;
+      --color-brown:  #a5673f;
+      --color-grey:   #767676;
+      --color-black:  #1b1c1d;
+    }
+
+    .red    { color: var(--color-red);}
+    .orange { color: var(--color-orange);}
+    .yellow { color: var(--color-yellow);}
+    .olive  { color: var(--color-olive);}
+    .green  { color: var(--color-green);}
+    .teal   { color: var(--color-teal);}
+    .blue   { color: var(--color-blue);}
+    .violet { color: var(--color-violet);}
+    .purple { color: var(--color-purple);}
+    .pink   { color: var(--color-pink);}
+    .brown  { color: var(--color-brown);}
+    .grey   { color: var(--color-grey);}
+    .black  { color: var(--color-black);}
+
+  style.
+    /* забавная игра ~слов~ букв: IUG - духота, душнильные названия минералов:) */
+    :root {
+      --color-ferrium: #0077ee; /* Ferrium - несущие конструкции, корпуса, оболочки */
+      --color-uranite: #00ee77; /* Uranite - энергетический, взрывчатка, защита от радиации */
+      --color-gallite: #eede00; /* Gallium - всякая электроника и щиты(генераторы полей) */
+      --color-colonists: var(--color-light);
+    }
+
+    .fe { color: var(--color-ferrium); }
+    .ur { color: var(--color-uranite); }
+    .ga { color: var(--color-gallite); }
+
+    .feb { background-color: var(--color-ferrium); }
+    .urb { background-color: var(--color-uranite); }
+    .gab { background-color: var(--color-gallite); }
+
+  // стили hr элементов
+  style.
+    .hr            { border-top: 1px solid; }
+    .primary   .hr { border-color: var(--bulma-primary); }
+    .secondary .hr { border-color: var(--bulma-text); }
+    .info      .hr { border-color: var(--bulma-info); }
+    .positive  .hr { border-color: var(--bulma-success); }
+    .negative  .hr { border-color: var(--bulma-danger); }
+    .warning   .hr { border-color: var(--bulma-warning); }
+
+  // цветные рамочки
+  style.
+    .bordered            { border: 1px solid; }
+    .bordered .primary   { border-color: var(--bulma-primary); }
+    .bordered .secondary { border-color: var(--bulma-text); }
+    .bordered .info      { border-color: var(--bulma-info); }
+    .bordered .positive  { border-color: var(--bulma-success); }
+    .bordered .negative  { border-color: var(--bulma-danger); }
+    .bordered .warning   { border-color: var(--bulma-warning); }
+
+
+//- mixin hr(args={})
+//-   - const text = args.text
+
+//-   .is-flex.is-align-items-center&attributes(attributes)
+//-     .hr.is-flex-grow-1
+//-     if text
+//-       .px-3.has-text-warning.is-size-7= text
+//-     .hr.is-flex-grow-1
+
+mixin hr(text)
+  .is-flex.is-align-items-center&attributes(attributes)
+    .hr.is-flex-grow-1
+    if text
+      .px-3.has-text-warning= text
+    .hr.is-flex-grow-1

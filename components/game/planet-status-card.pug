@@ -1,0 +1,59 @@
+include /components.pug
+script#planet-status-card-template(type="text/x-template")
+  div.border-box.border-bottom.mt-1.p-2(v-show="show")
+    planet-card-header(:title="$t('Status')", icon="fa-money-bill-trend-up", :year="planet.year - year")
+
+    +hr.info
+    div.is-flex.is-justify-content-space-between
+      div {{ $t('Population') }}
+      div {{ $FN(planet.population) }}
+    //-   planet-mineral-popover(name="Ferrium", :mineral="planet.ferrium",
+    //-                                          :concentration="planet.ferrium_conc",
+    //-                                           mining_rate="???")
+
+    div.is-flex.is-justify-content-space-between
+      div {{ $t('Resources/Year') }}
+      div ??? of ???
+    div.is-flex.is-justify-content-space-between
+      div {{ $t('Scanner Type') }}
+      div ???
+    div.is-flex.is-justify-content-space-between
+      div {{ $t('Scanner Range') }}
+      div ???
+
+    +hr.text
+    div.is-flex.is-justify-content-space-between
+      div {{ $t('Defences') }}
+      div ???
+    div.is-flex.is-justify-content-space-between
+      div {{ $t('Defence Type') }}
+      div ???
+    div.is-flex.is-justify-content-space-between
+      div {{ $t('Def Coverage') }}
+      div ???
+
+//----------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-status-card', {
+      template: '#planet-status-card-template', 
+      props: [
+        'show',   // показывать ли карточку
+        'year',   // текущий год
+        'planet', // ссылка на объект-планету
+      ],
+
+      setup(props) {
+        return {  };
+      },
+
+      mounted() {
+        console.log("--- mounted ---");
+        window.setupPopovers(this.$el);
+      },
+      beforeUnmount() {
+        console.log("--- unmounted ---");
+        window.cleanupPopovers(this.$el);
+      }
+    });
+  });

@@ -1,0 +1,26 @@
+script#race-primary-trait-card-template(type="text/x-template")
+  .card(:class="{ 'is-deaf': race.readonly }")
+    .card-content.p-2
+      .media
+        .media-left
+          span.icon.is-large.mr-3
+            i.fas.fa-screwdriver-wrench.fa-2x
+        .media-content
+          .title.is-4 PRT
+          .subtitle.is-6 Primary Racial Trait
+
+      .columns.is-multiline.is-variable.is-1
+        .column.is-half(v-for="trait in traits")
+          button.button.is-small.is-fullwidth(:class="{ 'is-primary': race.primary_trait == trait.id }")
+            span {{ trait.name }}
+
+      //- Дополнительное описание расы
+      .is-flex.is-align-items-center.my-4
+        .is-flex-grow-1(style="border-top: 1px solid #dbdbdb")
+        .px-3.has-text-info Дополнительное описание 2:
+        .is-flex-grow-1(style="border-top: 1px solid #dbdbdb")
+
+      .control.has-icons-left
+        input.input(type="text", :value="race.description", placeholder="Короткая заметка к расе")
+        span.icon.is-small.is-left
+          i.fas.fa-comment-dots

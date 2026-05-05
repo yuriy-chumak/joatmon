@@ -1,0 +1,79 @@
+script#game-card-template(type="text/x-template")
+  .card
+    .card-content.p-2
+      .media
+        .media-left
+          span.icon.is-large
+            //- TODO: добавить золотую иконку 'trophy' если игра выиграна
+            i.fa-2x(:class="{ 'fas fa-ghost'             : game.state == 0,\
+                              'fas fa-keyboard'          : game.state == 1 && game.ready == 0,\
+                              'far fa-hourglass-half'    : game.state == 1 && game.ready == 1,\
+                              'fas fa-dice'              : game.state == 2,\
+                              'fas fa-flag-checkered'    : game.state == 3 && !game.winner,\
+                              'fas fa-trophy has-text-success': game.state == 3 && game.winner\
+                            }")
+        .media-content
+          .title.is-4 {{ game.name }}
+          .subtitle.is-6 {{ game_state_description }}
+      .content
+        //- TODO: добавить цветовой индикатор "выиграл игру" или "проиграл игру"
+        .has-text-centered(v-if="game.state == 0") Идет набор игроков
+        .has-text-centered(v-if="game.state != 0") Year {{ game.year }}
+        progress.progress(max="100", :value="game.state == 0 ? 0 :\
+                                             game.state == 1 ? Approach(game.year) :\
+                                             game.state == 2 ? Approach(game.year) :\
+                                             game.state == 3 ? 100 : null",
+                                     :class="{ 'is-success': game.winner }")
+      .content
+        .control
+          label.checkbox
+            input.mr-2(type="checkbox", v-model="game.autopilot", disabled)
+            | Autopilot enabled
+        hr
+        .is-flex.is-justify-content-space-between
+          .mr-auto
+          .buttons
+            button.button(disabled) Детали
+            button.button(:class="{ 'is-danger' : game.state == 0,\
+                                    'is-success': game.state == 1 && game.ready == 0,\
+                                    'is-warning': game.state == 1 && game.ready == 1,\
+                                    'is-info': game.state == 2 }",
+                          :disabled='game.state > 2 ? true : null')
+              span(v-show="game.state == 0") Отказаться от игры
+              span(v-show="game.state == 1 && game.ready == 0",
+                   @click="$emit('play', game.id)") Играть
+              span(v-show="game.state == 1 && game.ready == 1",
+                   @click="$emit('play', game.id)") Отменить ход
+              span(v-show="game.state == 2") Игра считается...
+              span(v-show="game.state == 3") Игра закончена
+              //- Играть
+
+//- ======================================================
+script.
+  window.onVueReady((app) => {
+    app.component('game-card', {
+      props: ['game'],
+      template: '#game-card-template', 
+      setup(props) {
+        const k = 0.003;
+        // асимптота к 100
+        const Approach = (x) => 100 * (1 - Math.exp(-k * (x - 2398)));
+
+        return { Approach };
+      },
+      computed: {
+        game_state_description() {
+          switch (this.game.state) {
+            case 0: return "In Lobby";
+            case 1:
+                switch (this.game.ready) {
+                  case 0: return "Ожидаются приказы";
+                  case 1: return "Your orders done. Waiting for others.";
+                }
+            case 2: return "Game calculation";
+            case 3: return "Закончена";
+          };
+        }
+      }
+    });
+  });

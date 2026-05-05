@@ -1,0 +1,20 @@
+script#planet-card-header-template(type="text/x-template")
+  .is-flex.mb-2.is-align-items-center
+    .image.is-32x32.ml-0.mr-3
+      i.fas.fa-2x(:class="[icon]")
+    span.has-text-left
+      .title.is-6 {{ title }}
+      .subtitle.is-7(v-if="year < 0") Устарело на {{-year}} лет
+      .subtitle.is-7(v-if="year > 0") Данные за {{year}} год
+      .subtitle.is-7(v-if="year == 0") &nbsp;
+
+//--------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-card-header', {
+      template: '#planet-card-header-template',
+      props: [
+        'title', 'year', 'icon'
+      ]
+    });
+  });

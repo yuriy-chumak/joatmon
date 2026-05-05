@@ -1,0 +1,37 @@
+script#world-calculating-template(type="text/x-template")
+  .modal(:class="{ 'is-active': open }")
+    .modal-background
+    .modal-card
+      .modal-card-head
+        span.icon.is-large.mr-2
+          i.fas.fa-hourglass-half.fa-2x
+        span.modal-card-title
+          p.title.is-4
+            span(v-if="game_state == 1") Ждем других игроков
+            span(v-if="game_state == 2") Идет игровой год...
+          p.subtitle.is-6
+            span(v-if="game_state == 1") Точно все приказы отданы? Вы готовы встретить новый игровой год?
+            span(v-if="game_state == 2") Идет игровой год...
+      //- .modal-card-body
+      .modal-card-foot
+        .buttons
+          .button(@click="$emit('stop', false)", v-if="game_state == 1") Я передумал
+          .button(@click="$emit('stop', true)") Выйти на главный экран
+
+// -
+script.
+  window.onVueReady((app) => {
+    app.component('world-calculating-template', {
+      props: [
+        'open', 'game_state'
+      ],
+      template: '#world-calculating-template',
+
+      setup(props) {
+        return { };
+      },
+
+      watch: {
+      },
+    });
+  });

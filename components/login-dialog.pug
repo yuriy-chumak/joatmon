@@ -1,0 +1,59 @@
+script(src="js/OAuth.js")
+script(defer).
+  import('./components/login-dialog.js');
+
+script#login-dialog-template(type="text/x-template")
+  .modal(:class="{ 'is-active': open }")
+    .modal-background
+    .modal-card
+      .modal-card-head
+        span.icon.is-large.mr-2
+          i.fas.fa-right-to-bracket.fa-2x
+        span.modal-card-title
+          p.title.is-4 Войти в аккаунт
+          p.subtitle.is-6 Добро пожаловать обратно
+      .modal-card-body
+        button.is-fullwidth.button(@click="doLoginGoogle")
+          span.icon.is-small
+            i.fa-brands.fa-google
+          span Продолжить с Google
+
+        //- horizontal line "--- OR ---"
+        .is-flex.is-align-items-center.my-4
+          .is-flex-grow-1(style="border-top: 1px solid #dbdbdb")
+          .px-3.has-text-grey.is-size-7 OR
+          .is-flex-grow-1(style="border-top: 1px solid #dbdbdb")
+
+        //- Login
+        form(@submit.prevent)
+          .field
+            label.label Login
+            .control.has-icons-left.has-icons-right
+              input#userinput.input(type="text", placeholder="login name or email", v-model="login")
+              span.icon.is-small.is-left
+                i.fas.fa-user
+              span.icon.is-small.is-right
+                i.fas.fa-check
+          //- Password
+          .field
+            label.label Password
+            .control.has-icons-left.has-icons-right
+              input#passinput.input(type="password", placeholder="*****", v-model="password")
+              span.icon.is-small.is-left
+                i.fas.fa-key
+              span.icon.is-small.is-right
+                i.fas.fa-check
+          //- 
+          .field
+            .control
+              label.checkbox
+                input.mr-2(type="checkbox", checked, disabled)
+                | Remember me
+          .field
+            //- type="button" нужен чтобы браузер сам не отправлял форму
+            button.is-fullwidth.button.is-active(:disabled="login != '' && password != '' ? null : true", @click="doLogin") Login
+
+      .modal-card-foot
+        .buttons
+          .button(disabled) Cancel
+

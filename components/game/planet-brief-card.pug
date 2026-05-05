@@ -1,0 +1,40 @@
+script#planet-brief-card-template(type="text/x-template")
+  div.border-box.border-bottom.mt-1.p-1(v-show="show")
+
+    //- Изображение планеты и ее название
+    .is-flex.mb-2
+      .image.is-48x48.ml-0.mr-3
+        canvas#surface(style="width:100%; height:100%")
+      span.has-text-left
+        //- TODO: удалить planet.id, это только для дебага
+        .title.is-4 {{ planet.name }}
+        .subtitle.is-7(:class="[\
+                        year - planet.year > 20 ? 'has-text-danger' :\
+                        year - planet.year >  0 ? 'has-text-warning' :\
+                        '']")
+          | {{ (planet.year < year) ? `Устарело на ${year - planet.year} лет` : $t("N-year", planet.year) }}
+
+    //- TODO: сделать кнопки неактивными, если планета не своя
+    //- TODO: сделать переход на следующую планету по нажатию
+    .columns.is-1
+      .column
+        button.button.is-small.is-fullwidth(@click="$emit('prev')") prev
+      .column
+        button.button.is-small.is-fullwidth(@click="$emit('next')") next
+
+//-------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-brief-card', {
+      template: '#planet-brief-card-template', 
+      props: [
+        'show',   // показывать ли карточку
+        'year',   // текущий год
+        'planet', // ссылка на объект-планету
+      ],
+
+      setup(props) {
+        return {  };
+      }
+    });
+  });

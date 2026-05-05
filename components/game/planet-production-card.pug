@@ -1,0 +1,55 @@
+include /components.pug
+script#planet-production-card-template(type="text/x-template")
+  div.border-box.border-bottom.mt-1.p-2(v-show="show")
+    planet-card-header(title="Production", icon="fa-industry", :year="planet.year - year")
+
+    +hr.info
+    div
+      textarea.textarea(placeholder="Long Range Scout", disabled)
+
+    +hr.text
+    div.is-flex.is-justify-content-space-between
+      div Completion
+      div ??? year(s)
+    //-   planet-mineral-popover(name="Ferrium", :mineral="planet.ferrium",
+    //-                                          :concentration="planet.ferrium_conc",
+    //-                                           mining_rate="???")
+    //- div.is-flex.is-align-items-center
+    div.is-flex.is-justify-content-space-between
+      div Route to
+      div None
+
+    //- TODO: сделать разумные обработчики кнопок
+    .columns.is-1
+      .column
+        button.button.is-small.is-fullwidth.disabled Change
+      .column
+        button.button.is-small.is-fullwidth.disabled Clear
+      .column
+        button.button.is-small.is-fullwidth.disabled Route
+
+//----------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-production-card', {
+      template: '#planet-production-card-template', 
+      props: [
+        'show',   // показывать ли карточку
+        'year',   // текущий год
+        'planet', // ссылка на объект-планету
+      ],
+
+      setup(props) {
+        return {  };
+      },
+
+      mounted() {
+        console.log("--- mounted ---");
+        window.setupPopovers(this.$el);
+      },
+      beforeUnmount() {
+        console.log("--- unmounted ---");
+        window.cleanupPopovers(this.$el);
+      }
+    });
+  });

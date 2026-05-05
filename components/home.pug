@@ -1,0 +1,111 @@
+script#home-template(type="text/x-template")
+  .columns.is-gapless
+    .column.is-one-quarter(:class="{ disabled: (editRaceMode == 'edit') }")
+      .border-box.p-2
+        //- Заголовок
+        //- .is-flex
+        //-   img.image.is-48x48.ml-0.mr-3(:src="race.icon")
+        //-   span.has-text-left
+        //-     .title.is-6 {{ race.name }}
+        //-     .subtitle.is-6 {{ race.description }}
+        
+        span.is-flex.is-justify-content-space-between.is-align-items-start
+          span.is-flex
+            img.image.is-48x48.ml-0.mr-3(:src="usericon")
+            header
+              .title.is-4 {{ username ?? "&nbsp;" }}
+              .subtitle.is-6 Здесь все ваши расы
+          button.is-small.button.is-primary(disabled) Создать
+        .p-2
+        //- Список рас
+        .button.is-fullwidth(v-for="race in races",
+                            :class="{ 'is-active': race.id == race_selection }",
+                            @click="SelectRace(race.id)")
+          .is-flex
+            img.image.is-48x48.ml-0.mr-3(:src="race.icon")
+            span.has-text-left
+              .title.is-6 {{ race.name }}
+              .subtitle.is-6 {{ race.description }}
+          .mr-auto
+          .is-flex.is-align-items-center
+            .tag.is-info.mr-2 {{ race.id }}
+            div(:class="{ 'hover-button': race.id != race_selection }")
+              .button.is-small.has-text-danger(@click.stop="DeleteRace(race.id)",
+                                               :disabled="race.readonly ? true : null")
+                .icon
+                  i.fas.fa-xmark
+
+    .column
+      //- Полоска "раса и ее игровые статы"
+      //- TODO: возвращать статы с сервера
+      .block.border-box.p-2.mb-0
+        .is-flex.is-justify-content-space-between.is-align-items-center.is-flex-wrap-wrap.is-gap-1
+          .is-flex.is-align-items-center(style="white-space: nowrap")
+            img.image.is-48x48(:src="race.icon || usericon")
+            .p-1
+            span.has-text-left
+              .title.is-4 {{ race.name || username }}
+              .subtitle.is-6 {{ race.description }}
+          .tags
+            .tag.is-flex.is-flex-direction-column.is-align-items-center.p-5
+              span.is-size-6 {{ games.length }}
+              span.is-size-7 Игр
+            .tag.is-flex.is-flex-direction-column.is-align-items-center.p-5
+              span.is-size-6 {{ 0 }}
+              span.is-size-7 Активных
+            .tag.is-flex.is-flex-direction-column.is-align-items-center.p-5
+              span.is-size-6 {{ 0 }}
+              span.is-size-7 Побед
+            .tag.is-flex.is-flex-direction-column.is-align-items-center.p-5
+              span.is-size-6 {{ 0 }}%
+              span.is-size-7 Ачивок
+
+      //- Кнопки управления
+      .block.border-box.p-2.mb-0
+        //- Управление редактированием расы
+        .buttons(v-if="editRaceMode")
+          .button.has-text-success(:disabled="JSON.stringify(race) == JSON.stringify(race$) ? true : null") Сохранить
+          .button.has-text-danger(@click="editRaceMode = false") Отменить
+          .button.has-text-warning.is-disabled(:disabled="race.readonly ? true : null",
+                                               @click="SelectRace(race_selection)") Перезагрузить
+
+        //- Сортировка списка игр
+        .buttons(v-if="!editRaceMode")
+          .button.is-active(v-show="!race.isEmpty()", note="race all")
+            | Все игры
+          .button(@click="list_selection = 'all'", :class="{ 'is-active': list_selection == 'all' }") Все ваши игры
+          .button(@click="list_selection = 'attention'", :class="{ 'is-active': list_selection == 'attention' }") Ждут вашего хода
+          .button(@click="list_selection = 'finished'", :class="{ 'is-active': list_selection == 'finished' }") Завершены
+          .mr-auto
+          .buttons
+            .button(@click="EditSelectedRace", v-show="!race.isEmpty()")
+              span(v-show="race.readonly") Просмотреть&nbsp;
+              span(v-show="!race.readonly") Редактировать&nbsp;
+              span расу
+        .select.is-fullwidth(v-if="!editRaceMode")
+          select
+            option Сортировка: последние
+            option по прогрессу
+            option по рейтингу
+
+      //- карточки расы
+      .block.border-box(v-if="editRaceMode")
+        .grid.is-col-min-12.p-1
+          race-name-card.mb-0(:race="race$", :templates="race_templates")
+          race-primary-trait-card.mb-0(:race="race$")
+          race-lesser-traits-card.mb-0(:race="race$")
+          race-habitat-card.mb-0(:race="race$")
+          race-economy-card.mb-0(:race="race$")
+          race-science-card.mb-0(:race="race$")
+          //- филлер чтобы разметка в конце не поползла
+          .mr-auto
+          .mr-auto
+
+      //- список текущих игр
+      .block.border-box(v-if="!editRaceMode")
+        .grid.is-col-min-12.p-1
+          game-card(v-for="game in games", :game="game",
+                    @play="(game_id) => $emit('play', games[game_id])")
+          //- филлер чтобы карточки не растягивались
+          .mr-auto
+          .mr-auto

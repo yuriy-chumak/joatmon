@@ -1,0 +1,78 @@
+#main.container(v-cloak)
+  nav.navbar(role="navigation", aria-label="main navigation")
+    .navbar-brand
+      .navbar-item
+        a.title.is-5.is-uppercase(@click="titleClicked")
+          span {{ title || "..." }}
+      .navbar-item
+        server-status-button(:server-status="serverStatus")
+      a.navbar-burger(role="button", aria-label="menu", aria-expanded="false", data-target="navbarMenu", @click="navbarClicked")
+        span(area-hidden="true")
+        span(area-hidden="true")
+        span(area-hidden="true")
+        span(area-hidden="true")
+
+    #navbarMenu.navbar-menu
+      .navbar-start
+        .navbar-item
+          .tag.is-danger !!! UNDER ACTIVE DEVELOPMENT !!!
+        .navbar-item
+          choose-theme-dropdown
+        .navbar-item
+          choose-lang-dropdown(@ok="navbarClicked")
+      .navbar-end
+        .navbar-item
+          .field.is-grouped
+            span.tag.is-info Онлайн: {{ playersOnline || "0"}}
+            span.tag.is-info Сезон 4
+
+        //- Exit
+        .navbar-item
+          a.icon.has-text-danger(@click="Logout")
+            i.fas.fa-right-from-bracket
+  div
+    home(v-if="homeScreen == 'home'", ref="home",
+        @play="PlayGame", @set-title="SetTitle",
+        :username="username", :usericon="usericon")
+    game(v-if="homeScreen == 'game'", ref="game",
+        @home="Home", @set-title="SetTitle")
+
+  login-dialog(title="Логин" description="Диалог3" :open="loginDialog")
+
+//- home screen and cards
+include components/home.pug
+include components/home/race-card-header.pug
+include components/home/race-name-card.pug
+include components/home/race-template-dropdown.pug
+include components/home/race-primary-trait-card.pug
+include components/home/race-lesser-traits-card.pug
+include components/home/race-habitat-card.pug
+include components/home/race-economy-card.pug
+include components/home/race-science-card.pug
+include components/home/game-card.pug
+
+include components/game.pug
+include components/game/planet-debug-card.pug
+include components/game/planet-brief-card.pug
+include components/game/planet-card-header.pug
+include components/game/planet-minerals-card.pug
+include components/game/planet-mineral-popover.pug
+include components/game/planet-mine-popover.pug
+include components/game/planet-factory-popover.pug
+
+include components/game/planet-status-card.pug
+//- сюда добавлять popover карточки
+include components/game/planet-orbiting-card.pug
+include components/game/planet-production-card.pug
+include components/game/planet-starbase-card.pug
+
+//- все компоненты проекта
+include components/dropdown.pug
+include components/main/server-status-button.pug
+include components/main/choose-lang-dropdown.pug
+include components/main/choose-theme-dropdown.pug
+
+//- dialogs
+include components/login-dialog.pug
+
+include components/world-calculating-dialog.pug

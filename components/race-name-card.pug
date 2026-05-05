@@ -1,0 +1,34 @@
+include /components.pug
+script#race-name-card-template(type="text/x-template")
+  .card(:class="{ 'is-deaf': race.readonly }")
+    .card-content.p-2
+      .media
+        .media-left
+          span(:class="{ 'is-clickable': !race.readonly }", @click="GenerateRandomName")
+            span.icon.is-large.mr-3
+              i.fas.fa-dice.fa-2x
+        .media-content
+          .title.is-4 Name
+          .subtitle.is-6 Plural Race Name
+      .control.has-icons-left.has-icons-right
+        input.input(type="text", :value="race.name", placeholder="Plural Race Name")
+        span.icon.is-small.is-left
+          i.fas.fa-envelope
+        span.icon.is-small.is-right
+          i.fas.fa-check
+
+      +hr('Является копией').info.my-3(v-if="race.readonly")
+      +hr('Применить шаблон').info.my-3(v-if="!race.readonly")
+
+      .columns.is-multiline.is-variable.is-1
+        .column.is-half(v-for="(template, index) in templates.filter(race => race.template)", :key="index")
+          button.button.is-small.is-fullwidth(:class="{ 'is-primary': race.template == template.id }")
+            span {{ template.name }}
+        //- своя раса - темплейт
+        .column.is-half
+          //- race-template-dropdown(:race="race", :templates="templates")
+          race-template-dropdown(:race="race", :templates="templates.filter(race => !race.template)")
+
+    //- .extra.content
+    //- //- .extra.content
+    //- //-   | {{ race.points-left || "?" }} Advantage Points Left

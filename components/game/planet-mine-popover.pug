@@ -1,0 +1,26 @@
+script#planet-mine-popover-template(type="text/x-template")
+  .popover(style="max-width: 320px;")
+    table.table.is-narrow.is-borderless.has-background.bordered
+      tbody
+        tr
+          td.has-text-centered(colspan="2")
+            | {{ $t('Mining info') }}
+        tr
+          td.has-text-justified(colspan="2", style="line-height: 1.2;")
+            | {{ $t('you-have-N-mines-on-planet', mines ?? "??") }}.
+            br
+            | {{ $t('you-may-build-ip-to-N-mines', maximal) }};
+            | {{ $t('however-...-operating-only-N-of-them', operable ?? "??") }}.
+
+//----------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-mine-popover', {
+      template: '#planet-mine-popover-template', 
+      props: [
+        'mines',
+        'operable',
+        'maximal',
+      ],
+    });
+  });

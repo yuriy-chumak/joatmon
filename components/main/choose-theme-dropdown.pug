@@ -1,0 +1,77 @@
+script#choose-theme-dropdown-template(type="text/x-template")
+  .navbar-item.has-dropdown(:class="{ 'is-active': active }")
+    a.navbar-link(@click="activateMenu")
+      .icon.is-small.px-3
+        i(:aria-controls='id', aria-haspopup='true',
+        :class="[ (themes.find((i) => i.value == currentTheme) || { icon: 'fa-circle-exclamation' }).icon ]")
+    .navbar-dropdown.is-boxed
+      a.navbar-item(v-for="theme in themes", @click="chooseTheme(theme.name)",
+                   :class="{ 'is-active' : currentTheme === theme.value }")
+        span.icon.is-small
+          i(:class="[ theme.icon ]")
+        span {{ theme.name }}
+
+//- 
+script.
+  window.onVueReady((app) => {
+    app.component('choose-theme-dropdown', {
+      props: [],
+      template: '#choose-theme-dropdown-template',
+
+      setup(props, { emit }) {
+        const $el = getCurrentInstance();
+        const id ='dropdown-menu-' + Math.random().toString(36).substr(2, 9);
+        const currentTheme = ref(sessionStorage.getItem('currentTheme'));
+
+        const themes = [
+          { name: 'Sem Light', value: 'light semantic', icon: 'far fa-lightbulb' },
+          { name: 'Sem Dark',  value: 'dark semantic',  icon: 'fas fa-lightbulb' },
+          { name: 'Light',  value: 'light', icon: 'fas fa-sun' },
+          { name: 'Dark',   value: 'dark',  icon: 'fas fa-moon' },
+          { name: 'System', value:  null,   icon: 'fas fa-computer' }
+        ];
+
+        // local variables (and handlers)
+        const active = ref(false);
+        const handleOutsideClick = (event) => {
+          const dropdown = $el.vnode.el;
+          if (!dropdown.contains(event.target))
+            active.value = false;
+        };
+        const activateMenu = () => {
+          currentTheme.value = sessionStorage.getItem('currentTheme');
+          console.log("currentTheme.value: ", currentTheme.value)
+          active.value = !active.value;
+        };
+        const chooseTheme = (theme) => {
+          const value = themes.find(i => i.name == theme).value;
+          currentTheme.value = value;
+          active.value = false; // close menu
+
+          if (value)
+            sessionStorage.setItem('currentTheme', value)
+          else // clear saved system
+            sessionStorage.removeItem('currentTheme');
+
+          SwitchTheme(value);
+        };
+
+        return { id, themes, currentTheme, active, activateMenu, handleOutsideClick, chooseTheme };
+      },
+
+      watch: {
+        active(v, old) {
+          if (v == old)
+            return;
+          if (v)
+            document.addEventListener('click', this.handleOutsideClick);
+          else
+            document.removeEventListener('click', this.handleOutsideClick);
+        }
+      },
+
+      mounted() {
+        console.log("mounted")
+      }
+    });
+  });

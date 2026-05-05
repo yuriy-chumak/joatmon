@@ -6,3 +6,8 @@ An attempt to deepen the knowledge of web technologies (html, javascript, pug, v
 The backend is written in [Otus Lisp](https://github.com/yuriy-chumak/ol).
 
 [Game API description](index.md).
+
+TODO релизные таски
+-------------------
+1. минификация javascript
+2. минификация языковых файлов (поделать джойны, поудалять нахрен джойны)

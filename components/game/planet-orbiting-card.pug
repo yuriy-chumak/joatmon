@@ -1,0 +1,70 @@
+include /components.pug
+script#planet-orbiting-card-template(type="text/x-template")
+  div.border-box.border-bottom.mt-1.p-2(v-show="show")
+    planet-card-header(title="Fleets in Orbit", icon="fa-rocket", :year="planet.year - year")
+
+    +hr.info.mb-1
+    div.is-flex.is-justify-content-space-between
+      .dropdown
+        .dropdown-trigger
+          .control.has-icons-right
+            input.input.is-small(type="text", placeholder="Ship Name #1", disabled)
+            span.icon.is-small.is-right
+              i.fas.fa-check
+        .dropdown-menu#dropdown-menu(role="menu")
+          .dropdown-content
+            .dropdown-item First Ship
+            .dropdown-item Second Ship
+            .dropdown-item Third Ship
+            .dropdown-item Fourth Ship
+    //-   planet-mineral-popover(name="Ferrium", :mineral="planet.ferrium",
+    //-                                          :concentration="planet.ferrium_conc",
+    //-                                           mining_rate="???")
+    //- div.is-flex.is-align-items-center
+
+
+    div(style="display: grid; grid-template-columns: auto 1fr; align-items: center;")
+      div.mr-1 Fuel
+      progress.progress.is-danger.mb-0(value="100". max="100")
+      div.mr-1 Cargo
+      div.progress.is-flex.mb-0(style="overflow: hidden;")
+        div(style="width: 25%; background-color: var(--color-ferrium)")
+        div(style="width: 20%; background-color: var(--color-uranite)")
+        div(style="width: 30%; background-color: var(--color-gallite)")
+        div(style="width: 15%; background-color: var(--bulma-white)")
+        div(style="width: 10%; background-color: var(--bulma-light)")
+
+    +hr.text.mb-1
+
+    //- TODO: сделать разумные обработчики кнопок
+    .columns.is-1
+      .column
+        button.button.is-small.is-fullwidth(disabled) Goto
+      .column
+        button.button.is-small.is-fullwidth(disabled) Cargo
+
+//----------------------------------------------------------
+script.
+  window.onVueReady((app) => {
+    app.component('planet-orbiting-card', {
+      template: '#planet-orbiting-card-template', 
+      props: [
+        'show',   // показывать ли карточку
+        'year',   // текущий год
+        'planet', // ссылка на объект-планету
+      ],
+
+      setup(props) {
+        return {  };
+      },
+
+      mounted() {
+        console.log("--- mounted ---");
+        window.setupPopovers(this.$el);
+      },
+      beforeUnmount() {
+        console.log("--- unmounted ---");
+        window.cleanupPopovers(this.$el);
+      }
+    });
+  });
