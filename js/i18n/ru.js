@@ -1,4 +1,15 @@
 export default {
+    pluralRule: (n) => {
+            console.log("n:", n)
+            const absN = Math.abs(n) % 100;
+            const n1 = absN % 10;
+
+            if (absN > 10 && absN < 20) return 0;  // 12 заводов, 17 фабрик
+            if (n1 > 1 && n1 < 5)       return 2;  //  2 завода,  42 фабрики
+            if (n1 === 1)               return 1;  //  1 завод,    1 фабрика
+            /* else */                  return 0;  //  0 заводов, 27 фабрик
+        },
+
     'N-year': "{n} год",
 
     // Lesser Racial Traits

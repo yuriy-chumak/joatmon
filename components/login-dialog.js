@@ -55,9 +55,8 @@ window.onVueReady((app) => app.component('login-dialog', {
                         console.log(response);
                         switch (response.status) {
                         case 200:
-                            // data.Close();
-                            // window.location.reload();
-                            // signingin.value = false;
+                            window.location.reload();
+                            signingin.value = false;
                             break;
                         case 401:
                             timeout += Math.trunc(timeout * 0.10); // test the server slower and slower
