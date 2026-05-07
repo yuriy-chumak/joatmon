@@ -97,6 +97,18 @@ export const game = {
             this.draw.find('.planet').each(function() {
                 this.remove();
             });
+
+            // нарисуем на фоне планетарные сканеры (сканируемую территорию)
+            console.log("ищем сканеры");
+            for (let pid in planets) {
+                let planet = planets[pid];
+                if (!planet.scanner)
+                    continue;
+                console.log("planet.scanner: ", planet.scanner);
+                this.draw.circle(2 * planet.scanner.radius).fill('#77227755')
+                .center(planet.x, planet.y)
+            }
+
             // и нарисуем новые
             var radius = isMobile ? 2 : 1;
             for (let pid in planets) {
@@ -111,6 +123,7 @@ export const game = {
                 .center(planet.x, planet.y)
                 .addClass('planet');
             }
+
 
             // список планет обновился, а ни одна планета еще не выбрана
             // значит найдем ~~первую~~ лучшую из наших
